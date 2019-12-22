@@ -152,7 +152,7 @@ class Chess:
         :returns: booleen
         """
 
-    def eat(self, color, pos2):
+    def eat(self, color, piece, pos1, pos2):
         """
         Méthode permettant de manger un pion adverse placé
         à la position pos2
@@ -162,10 +162,39 @@ class Chess:
         :raise ChessError: s'il n'y a aucun pion à la position pos2
         :raise ChessError: si le pion à la position pos2 n'est pas un pion adverse
 
-        Pour déplacer le pion, faire appel à la méthode move
-        Pour supprimer le pion à la position pos2, faire appel à
-        la méthode delete_pion
+        Pour déplacer le pion, faire appel à la méthode move avec action='move'
+        Pour supprimer le pion, faire appel à la méthode du pion à supprimer avec action='del'.
+        Ce pion est celui placé à la position 'pos2'
         """
+        positions_pions = [[position for position in positions.keys()] for positions in self.state().values()]
+        positions_pions = positions_pions[0] + positions_pions[1]
+        couleur_adverse = {'black':'white', 'white':'black'}
+
+        # Traitement d'erreurs
+        if pos2 not in positions_pions:
+            raise ChessError("Il n'y a aucun pion à bouffer à cette position")
+        elif pos2 not in self.state()[couleur_adverse[color]].keys():
+            raise ChessError("Ce pion n'est pas ennemi.")
+
+        # Déplacement
+        self.move(color, piece, pos1, pos2)
+
+        # Suppression du pion à manger
+        oppo_color = couleur_adverse[color]
+        pion_adverse = self.state()[oppo_color][pos2][0]
+
+        if pion_adverse == 'P':
+            self.__pion(color=oppo_color, pos2=pos2, action='del')
+        elif pion_adverse == 'K':
+            self.__roi(color=oppo_color, pos2=pos2, action='del')
+        elif pion_adverse == 'F':
+            self.__fou(color=oppo_color, pos2=pos2, action='del')
+        elif pion_adverse == 'Q':
+            self.__reine(color=oppo_color, pos2=pos2, action='del')
+        elif pion_adverse == 'C':
+            self.__cheval(color=oppo_color, pos2=pos2, action='del')
+        elif pion_adverse == 'T':
+            self.__tour(color=oppo_color, pos2=pos2, action='del')
 
     def __pion(self, color=None, pos1=None, pos2=None, action=None):
 
@@ -354,16 +383,10 @@ class Chess:
 game = Chess('Jacob', 'Pascal')
 print(game.state())
 print(game)
-# game.move('white', 'P', (1, 2), (1, 4))
-# print(game)
-
-"""
-Trouver le moyen de simplfier les méthodes des pièces
-Rappel: Les méthodes...
-(1) Déplacent le pion si demandé
-(2) Suppriment le pion si demandé
-(3) Génèrent tout le temps les coups valides de chaque pion
-
-move va faire appel à la bonnne fonction selon la pièce demandée (action=move)
-eat va faire appel à la bonne fonction selon la pièce demandée (action=del)
-"""
+game.move('white', 'P', (1, 2), (1, 4))
+print(game)
+game.move('white', 'P', (1, 4), (1, 5))
+game.move('white', 'P', (1, 5), (1, 6))
+game.eat('black', 'C', (2, 8), (1, 6))
+game.move('black', 'C', (1, 6), (2, 4))
+print(game)

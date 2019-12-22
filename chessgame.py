@@ -176,9 +176,6 @@ class Chess:
         elif pos2 not in self.state()[couleur_adverse[color]].keys():
             raise ChessError("Ce pion n'est pas ennemi.")
 
-        # Déplacement
-        self.move(color, piece, pos1, pos2)
-
         # Suppression du pion à manger
         oppo_color = couleur_adverse[color]
         pion_adverse = self.state()[oppo_color][pos2][0]
@@ -195,6 +192,9 @@ class Chess:
             self.__cheval(color=oppo_color, pos2=pos2, action='del')
         elif pion_adverse == 'T':
             self.__tour(color=oppo_color, pos2=pos2, action='del')
+
+        # Déplacement
+        self.move(color, piece, pos1, pos2)
 
     def __pion(self, color=None, pos1=None, pos2=None, action=None):
 
@@ -225,7 +225,7 @@ class Chess:
                             coup_valide.append((x, y+2))
                         coup_valide.append((x, y+1))
 
-                    self.etat[color][position][1] += coup_valide
+                    self.etat[color][position][1] = coup_valide
 
     def __fou(self, color=None, pos1=None, pos2=None, action=None):
 
@@ -255,8 +255,11 @@ class Chess:
                             if coord not in positions_restantes:
                                 del coup_valide[i][n:]
                                 break
+                    coup = []
                     for direction in coup_valide:
-                        self.etat[color][position][1] += direction
+                        coup += direction
+
+                    self.etat[color][position][1] = coup
 
     def __roi(self, color=None, pos1=None, pos2=None, action=None):
 
@@ -278,9 +281,8 @@ class Chess:
                 if liste[0] == 'K':
                     x, y = position
                     coup_valide = [(x-1, y+1), (x, y+1), (x+1, y+1), (x+1, y), (x+1, y-1), (x, y-1), (x-1, y-1), (x-1, y)]
-                    for coord in coup_valide:
-                        if coord in positions_restantes:
-                            self.etat[color][position][1].append(coord)
+
+                    self.etat[color][position][1] = list(set(coup_valide) & positions_restantes)
 
     def __reine(self, color=None, pos1=None, pos2=None, action=None):
 
@@ -312,8 +314,11 @@ class Chess:
                             if coord not in positions_restantes:
                                 del coup_valide[i][n:]
                                 break
+                    coup = []
                     for direction in coup_valide:
-                        self.etat[color][position][1] += direction
+                        coup += direction
+
+                    self.etat[color][position][1] = coup
 
     def __tour(self, color=None, pos1=None, pos2=None, action=None):
 
@@ -343,8 +348,11 @@ class Chess:
                             if coord not in positions_restantes:
                                 del coup_valide[i][n:]
                                 break
+                    coup = []
                     for direction in coup_valide:
-                        self.etat[color][position][1] += direction
+                        coup += direction
+
+                    self.etat[color][position][1] = coup
 
     def __cheval(self, color=None, pos1=None, pos2=None, action=None):
 
@@ -367,9 +375,8 @@ class Chess:
                     x, y = position
                     coup_valide = [(x+1, y+2), (x-1, y+2), (x+2, y+1), (x-2, y+1),
                                 (x+2, y-1), (x-2, y-1), (x+1, y-2), (x-1, y-2)]
-                    for coord in coup_valide:
-                        if coord in positions_restantes:
-                            self.etat[color][position][1].append(coord)
+
+                    self.etat[color][position][1] = list(set(coup_valide) & positions_restantes)
 
         """
         Permet de supprimer un pion de l'état actuelle de jeu
@@ -386,7 +393,13 @@ print(game)
 game.move('white', 'P', (1, 2), (1, 4))
 print(game)
 game.move('white', 'P', (1, 4), (1, 5))
+print(game)
 game.move('white', 'P', (1, 5), (1, 6))
+print(game.state())
+print(game)
 game.eat('black', 'C', (2, 8), (1, 6))
+print(game.state())
+print(game)
 game.move('black', 'C', (1, 6), (2, 4))
+print(game.state())
 print(game)

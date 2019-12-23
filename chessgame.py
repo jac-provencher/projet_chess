@@ -109,7 +109,6 @@ class Chess:
         Méthode permet de retourne l'état de partie actuelle
         :returns: l'état de partie (qui sera utilisé pour __str__, donc sans les coups valides)
         """
-        self.__pion()
         self.__pieces()
 
         return self.etat
@@ -154,17 +153,16 @@ class Chess:
         # Déplacement
         self.move(color, piece, pos1, pos2)
 
-    def __pion(self):
+    def __pieces(self):
 
         # Mise à jour des coups valides pour chaque fou
-        positions_pions = [[position for position in positions.keys()] for positions in self.etat.values()]
-        positions_restantes = {(x, y) for x in range(1, 9) for y in range(1, 9)} - set(positions_pions[0]+ positions_pions[1])
+        coord = [[position for position in positions.keys()] for positions in self.etat.values()]
+        positions_restantes = {(x, y) for x in range(1, 9) for y in range(1, 9)} - set(coord[0]+ coord[1])
 
-        # Mise à jour des coups valides pour chaque pion
         for color, positions in self.etat.items():
             for position, liste in positions.items():
+                x, y = position
                 if liste[0] == 'P':
-                    x, y = position
 
                     if color == 'black':
                         if y == 7:
@@ -192,18 +190,7 @@ class Chess:
                             if (x, y+1) in positions_restantes:
                                 self.etat['white'][position][1] = [(x, y+1)]
 
-    def __pieces(self):
-
-        # Mise à jour des coups valides pour chaque fou
-        coord = [[position for position in positions.keys()] for positions in self.etat.values()]
-        positions_restantes = {(x, y) for x in range(1, 9) for y in range(1, 9)} - set(coord[0]+ coord[1])
-
-        for color, positions in self.etat.items():
-            for position, liste in positions.items():
-                if liste[0] == 'P':
-                    continue
                 else:
-                    x, y = position
                     # Revoir pour simplifier les 'for i in range(1, 9)'
                     coup_valide = {
                                     'K':[
@@ -248,10 +235,13 @@ class Chess:
                         self.etat[color][position][1] = coup
 
 def etat(state):
+    total = set()
     for color, info in state.items():
-        print(f"{color}: {len(info)} pions")
+        print(f"{color}:")
         for position, liste in info.items():
             print(f"{liste[0]}:{position}, coups valides = {liste[1]}")
+            total.add(position)
+    print(f"{len(total)} pions sur l'échiquier")
 
 def partie(name1, name2, nb_coup):
     game = Chess(name1, name2)

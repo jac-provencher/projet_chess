@@ -113,7 +113,7 @@ class Chess:
 
         return self.etat
 
-    def checkmate(self, color):
+    def checkmate(self):
         """
         Méthode vérifiant si le roi adverse est en position
         d'échec et mat
@@ -122,8 +122,29 @@ class Chess:
         Autrement,
         :returns: False
         """
+        player = {'black':self.player1, 'white':self.player2}
 
-    def check(self, color):
+        # Coups valides pour chaque couleur
+        coup_valide = {'white':set(), 'black':set()}
+        oppo = {'black':'white', 'white':'black'}
+
+        for color in self.state().keys():
+            for coups in [coord[1] for coord in self.state()[color].values() if coord[1]]:
+                for coup in coups:
+                    coup_valide[color].add(coup)
+
+        for color, info in self.state().items():
+            for piece, coups in info.values():
+                if piece == 'K':
+                    for coord in set(coups):
+                        if coord not in coup_valide[oppo[color]]:
+                            return False
+                        else:
+                            return f"Le gagnant est {player[color]}!"
+
+        return False
+
+    def check(self):
         """
         Vérifie si le roi adverse est en position d'échec
         :returns: booleen
@@ -248,18 +269,46 @@ def etat(state):
             total.add(position)
     print(f"{len(total)} pions sur l'échiquier")
 
-def partie(name1, name2, nb_coup):
+def autogame(name1, name2, nb_coup=0):
     game = Chess(name1, name2)
     etat(game.state())
     print(game)
-    count = 0
-    while count < nb_coup:
+
+    while not game.checkmate():
+
         game.autoplay('black')
         etat(game.state())
         print(game)
+        if game.checkmate():
+            print(game.checkmate())
+            break
+
         game.autoplay('white')
         etat(game.state())
         print(game)
+        if game.checkmate():
+            print(game.checkmate())
+            break
+
+def handgame(name1, name2='Robot'):
+    game = Chess(name1, name2)
+    print(game)
+    # while not game.checkmate():
+    count = 0
+    while count < 10:
+        piece = input("Pion à déplacer (P, F, C, T, K, Q): ")
+        pos1 = input("Position du pion xy: ")
+        pos2 = input("Position de déplacement xy: ")
+        try:
+            game.move('white', piece, (int(pos1[0]), int(pos1[1])), (int(pos2[0]), int(pos2[1])))
+            print(game)
+            game.autoplay('black')
+            print(game)
+        except ChessError as err:
+            print(err)
+            print(game)
+
         count += 1
 
-partie('Jacob', 'Pascal', 40)
+# handgame('Jacob')
+autogame('Jacob', 'Pascal')

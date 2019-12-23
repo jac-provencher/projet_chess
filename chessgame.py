@@ -12,7 +12,6 @@ class Chess:
         """
         Initialiser un nouvel état de partie
         Accepte en argument le nom de deux joueurs en str
-
         :raise ChessError: si un des deux joueurs n'est pas une str
         """
         self.player1 = player1
@@ -33,9 +32,7 @@ class Chess:
                     }
 
     def __str__(self):
-        """
-        :returns: la chaine de caractère représentant l'état de jeu actuelle
-        """
+
         # Construction du damier
         d1 = [[' ' for _ in range(35)] for _ in range(15)]
         for i, ligne in enumerate(d1[::2]):
@@ -64,13 +61,8 @@ class Chess:
         """
         Méthode permettant de déplacer le pion 'piece' situé à
         la position pos1 vers la position pos2.
-
-        :Argument: une color, une piece, sa position (pos1) et sa nouvelle position (pos2)
-
         :raise ChessError: si aucun pion ne se trouve à la position pos1
         :raise ChessError: si pos2 n'est pas un coup valide pour le pion 'piece'
-
-        :modifie: l'état de partie
         """
         positions_pions = [[position for position in positions.keys()] for positions in self.state().values()]
         positions_pions = positions_pions[0] + positions_pions[1]
@@ -95,12 +87,7 @@ class Chess:
         Méthode permettant de jouer un coup valide pour
         l'état actuelle de jeu (pour le moment, ne jouer qu'un coup valide
         pas nécessairement un bon coup)
-
         :raise ChessError: si la couleur est ni 'black' ni 'white'
-
-        :Argument: color
-
-        :modifie: l'état de partie
         """
         if color not in ['black', 'white']:
             raise ChessError("Cette couleur n'existe pas aux échecs.")
@@ -120,13 +107,7 @@ class Chess:
     def state(self):
         """
         Méthode permet de retourne l'état de partie actuelle
-
         :returns: l'état de partie (qui sera utilisé pour __str__, donc sans les coups valides)
-
-        Note: l'état de partie est un rassemblement des état de jeu
-        de chaque type de pion. Il faudra aller piger les bons éléments
-        dans le dictionnaire retourné par les méthodes dans la class Piece
-        des pions.
         """
         self.__pion()
         self.__pieces()
@@ -137,12 +118,8 @@ class Chess:
         """
         Méthode vérifiant si le roi adverse est en position
         d'échec et mat
-
-        :Argument: color (le roi adverse est le roi de inverse à 'color')
-
         Si True,
         :returns: le nom du gagnant
-
         Autrement,
         :returns: False
         """
@@ -150,9 +127,6 @@ class Chess:
     def check(self, color):
         """
         Vérifie si le roi adverse est en position d'échec
-
-        :Argument: color (le roi adverse est le roi de inverse à 'color')
-
         :returns: booleen
         """
 
@@ -160,15 +134,8 @@ class Chess:
         """
         Méthode permettant de manger un pion adverse placé
         à la position pos2
-
-        :Argument: piece, position de 'piece' (pos1), nouvelle position (pos2)
-
         :raise ChessError: s'il n'y a aucun pion à la position pos2
         :raise ChessError: si le pion à la position pos2 n'est pas un pion adverse
-
-        Pour déplacer le pion, faire appel à la méthode move avec action='move'
-        Pour supprimer le pion, faire appel à la méthode du pion à supprimer avec action='del'.
-        Ce pion est celui placé à la position 'pos2'
         """
         positions_pions = [[position for position in positions.keys()] for positions in self.state().values()]
         positions_pions = positions_pions[0] + positions_pions[1]
@@ -189,25 +156,41 @@ class Chess:
 
     def __pion(self):
 
+        # Mise à jour des coups valides pour chaque fou
+        positions_pions = [[position for position in positions.keys()] for positions in self.etat.values()]
+        positions_restantes = {(x, y) for x in range(1, 9) for y in range(1, 9)} - set(positions_pions[0]+ positions_pions[1])
+
         # Mise à jour des coups valides pour chaque pion
         for color, positions in self.etat.items():
             for position, liste in positions.items():
                 if liste[0] == 'P':
-                    coup_valide = []
                     x, y = position
-                    # Revoir pour lorsqu'un pion peut manger un pion adverse!
-                    # ATTENTION! Si un pion est directement devant un pion, le pion ne
-                    # peut pas avancer.
+
                     if color == 'black':
                         if y == 7:
-                            coup_valide.append((x, y-2))
-                        coup_valide.append((x, y-1))
-                    else:
-                        if y == 2:
-                            coup_valide.append((x, y+2))
-                        coup_valide.append((x, y+1))
+                            coup_valide = [(x, y-i) for i in range(1, 3)]
+                            for i, coord in enumerate(coup_valide):
+                                if coord not in positions_restantes:
+                                    del coup_valide[i:]
+                                    break
+                            self.etat['black'][position][1] = coup_valide
 
-                    self.etat[color][position][1] = coup_valide
+                        else:
+                            if (x, y-1) in positions_restantes:
+                                self.etat['black'][position][1] = [(x, y-1)]
+
+                    elif color == 'white':
+                        if y == 2:
+                            coup_valide = [(x, y+i) for i in range(1, 3)]
+                            for i, coord in enumerate(coup_valide):
+                                if coord not in positions_restantes:
+                                    del coup_valide[i:]
+                                    break
+                            self.etat['white'][position][1] = coup_valide
+
+                        else:
+                            if (x, y+1) in positions_restantes:
+                                self.etat['white'][position][1] = [(x, y+1)]
 
     def __pieces(self):
 
@@ -249,12 +232,10 @@ class Chess:
 
                     # Positions fixes
                     if liste[0] in ['K', 'C']:
-
                         self.etat[color][position][1] = list(set(coup_valide[liste[0]]) & positions_restantes)
 
                     # Positions longues portées
                     else:
-
                         for i, direction in enumerate(coup_valide[liste[0]]):
                             for n, coord in enumerate(direction):
                                 if coord not in positions_restantes:
@@ -286,4 +267,4 @@ def partie(name1, name2, nb_coup):
         print(game)
         count += 1
 
-partie('Jacob', 'Pascal', 5)
+partie('Jacob', 'Pascal', 40)

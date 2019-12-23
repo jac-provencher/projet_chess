@@ -116,32 +116,6 @@
 # print(coord)
 # print(fous)
 
-"""(x, y+2) si pion au debut
-(x, y+1)
-(x+1, y+1) ou (x-1, y+1) pour bouffer
-
-:King:
-
-
-
-:Queen:
-
-
-
-:Fou:
-
-
-
-:Tour:
-
-
-
-:Cheval:
-
-
-
-"""
-
 dico = {
         'K': [
                 (x, y+1), (x, y-1), (x+1, y), (x-1, y),
@@ -166,3 +140,34 @@ dico = {
                 (x+2, y-1), (x-2, y-1), (x+1, y-2), (x-1, y-2)
                 ]
         }
+
+"""
+Cas spécial : positions valides des pions
+
+(1) Si le pion est encore sur sa ligne de départ,
+faire un dico = {'black':[(x, y-1), (x, y-2)], 'white':[(x, y+1), (x, y+2)]}
+for color, coup in dico.items():
+        for i, coord in enumerate(coup):
+                if coord in self.etat:
+                        del coup_valide[color][i]
+
+(2) Autrement,
+si (x, y+1) n'est pas dans self.etat:
+ajouter (x, y+1) dans ses coups valides.
+
+
+
+(x-1, y+1) ou (x+1, y+1) pour bouffer (**garder pour plus tard**)
+*Cas du prise en passant...
+
+Donc,
+BLACK:
+(x, y-1)
+(x, y-2)
+(x+1, y-1) ou (x-1, y-1)
+
+WHITE:
+(x, y+1)
+(x, y+2)
+(x-1, y+1) ou (x+1, y+1)
+"""

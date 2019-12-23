@@ -86,21 +86,11 @@ class Chess:
         elif pos2 not in coup_valide:
             raise ChessError("Ce déplacement est invalide.")
 
-        # Appel de la bonne méthode
-        if piece == 'P':
-            self.__pion(color=color, pos1=pos1, pos2=pos2, action='move')
-        elif piece == 'K':
-            self.__roi(color=color, pos1=pos1, pos2=pos2, action='move')
-        elif piece == 'F':
-            self.__fou(color=color, pos1=pos1, pos2=pos2, action='move')
-        elif piece == 'Q':
-            self.__reine(color=color, pos1=pos1, pos2=pos2, action='move')
-        elif piece == 'C':
-            self.__cheval(color=color, pos1=pos1, pos2=pos2, action='move')
-        elif piece == 'T':
-            self.__tour(color=color, pos1=pos1, pos2=pos2, action='move')
+        # Déplacement du pion 'piece'
+        del self.etat[color][pos1]
+        self.etat[color][pos2] = [piece, []]
 
-    def play(self, color):
+    def autoplay(self, color):
         """
         Méthode permettant de jouer un coup valide pour
         l'état actuelle de jeu (pour le moment, ne jouer qu'un coup valide
@@ -139,11 +129,7 @@ class Chess:
         des pions.
         """
         self.__pion()
-        self.__tour()
-        self.__roi()
-        self.__reine()
-        self.__cheval()
-        self.__fou()
+        self.__pieces()
 
         return self.etat
 
@@ -196,34 +182,12 @@ class Chess:
 
         # Suppression du pion à manger
         oppo_color = couleur_adverse[color]
-        pion_adverse = self.state()[oppo_color][pos2][0]
-
-        if pion_adverse == 'P':
-            self.__pion(color=oppo_color, pos2=pos2, action='del')
-        elif pion_adverse == 'K':
-            self.__roi(color=oppo_color, pos2=pos2, action='del')
-        elif pion_adverse == 'F':
-            self.__fou(color=oppo_color, pos2=pos2, action='del')
-        elif pion_adverse == 'Q':
-            self.__reine(color=oppo_color, pos2=pos2, action='del')
-        elif pion_adverse == 'C':
-            self.__cheval(color=oppo_color, pos2=pos2, action='del')
-        elif pion_adverse == 'T':
-            self.__tour(color=oppo_color, pos2=pos2, action='del')
+        del self.etat[oppo_color][pos2]
 
         # Déplacement
         self.move(color, piece, pos1, pos2)
 
-    def __pion(self, color=None, pos1=None, pos2=None, action=None):
-
-        # Déplacement du pion
-        if color and pos1 and pos2 is not None and action == 'move':
-            del self.etat[color][pos1]
-            self.etat[color][pos2] = ['P', []]
-
-        # Suppression du pion
-        elif color and pos2 is not None and action == 'del':
-            del self.etat[color][pos2]
+    def __pion(self):
 
         # Mise à jour des coups valides pour chaque pion
         for color, positions in self.etat.items():
@@ -245,16 +209,7 @@ class Chess:
 
                     self.etat[color][position][1] = coup_valide
 
-    def __fou(self, color=None, pos1=None, pos2=None, action=None):
-
-        # Déplacement d'un fou
-        if color and pos1 and pos2 is not None and action == 'move':
-            del self.etat[color][pos1]
-            self.etat[color][pos2] = ['F', []]
-
-        # Suppression d'un fou
-        elif color and pos2 is not None and action == 'del':
-            del self.etat[color][pos2]
+    def __pieces(self):
 
         # Mise à jour des coups valides pour chaque fou
         coord = [[position for position in positions.keys()] for positions in self.etat.values()]
@@ -262,162 +217,73 @@ class Chess:
 
         for color, positions in self.etat.items():
             for position, liste in positions.items():
-                if liste[0] == 'F':
+                if liste[0] == 'P':
+                    continue
+                else:
                     x, y = position
-                    coup_valide = [
-                                    [(x+i, y+i) for i in range(1, 9)], [(x+i, y-i) for i in range(1, 9)],
-                                    [(x-i, y+i) for i in range(1, 9)], [(x-i, y-i) for i in range(1, 9)]
-                                    ]
-                    for i, direction in enumerate(coup_valide):
-                        for n, coord in enumerate(direction):
-                            if coord not in positions_restantes:
-                                del coup_valide[i][n:]
-                                break
-                    coup = []
-                    for direction in coup_valide:
-                        coup += direction
+                    # Revoir pour simplifier les 'for i in range(1, 9)'
+                    coup_valide = {
+                                    'K':[
+                                            (x, y+1), (x, y-1), (x+1, y), (x-1, y),
+                                            (x+1, y+1), (x-1, y+1), (x+1, y-1), (x-1, y-1)
+                                        ],
+                                    'Q':[
+                                            [(x, y+i) for i in range(1, 9)], [(x, y-i) for i in range(1, 9)],
+                                            [(x+i, y) for i in range(1, 9)], [(x-i, y) for i in range(1, 9)],
+                                            [(x+i, y+i) for i in range(1, 9)], [(x-i, y+i) for i in range(1, 9)],
+                                            [(x+i, y-i) for i in range(1, 9)], [(x-i, y-i) for i in range(1, 9)]
+                                        ],
+                                    'F':[
+                                            [(x+i, y+i) for i in range(1, 9)], [(x+i, y-i) for i in range(1, 9)],
+                                            [(x-i, y+i) for i in range(1, 9)], [(x-i, y-i) for i in range(1, 9)]
+                                        ],
+                                    'T':[
+                                            [(x+i, y) for i in range(1, 9)], [(x-i, y) for i in range(1, 9)],
+                                            [(x, y+i) for i in range(1, 9)], [(x, y-i) for i in range(1, 9)]
+                                        ],
+                                    'C':[
+                                            (x+1, y+2), (x-1, y+2), (x+2, y+1), (x-2, y+1),
+                                            (x+2, y-1), (x-2, y-1), (x+1, y-2), (x-1, y-2)
+                                        ]
+                                    }
 
-                    self.etat[color][position][1] = coup
+                    # Positions fixes
+                    if liste[0] in ['K', 'C']:
 
-    def __roi(self, color=None, pos1=None, pos2=None, action=None):
+                        self.etat[color][position][1] = list(set(coup_valide[liste[0]]) & positions_restantes)
 
-        # Déplacement d'un roi
-        if color and pos1 and pos2 is not None and action == 'move':
-            del self.etat[color][pos1]
-            self.etat[color][pos2] = ['K', []]
+                    # Positions longues portées
+                    else:
 
-        # Suppression d'un roi
-        elif color and pos2 is not None and action == 'del':
-            del self.etat[color][pos2]
+                        for i, direction in enumerate(coup_valide[liste[0]]):
+                            for n, coord in enumerate(direction):
+                                if coord not in positions_restantes:
+                                    del coup_valide[liste[0]][i][n:]
+                                    break
+                        coup = []
+                        for direction in coup_valide[liste[0]]:
+                            coup += direction
 
-        # Mise à jour des coups valides pour chaque roi
-        coord = [[position for position in positions.keys()] for positions in self.etat.values()]
-        positions_restantes = {(x, y) for x in range(1, 9) for y in range(1, 9)} - set(coord[0]+ coord[1])
+                        self.etat[color][position][1] = coup
 
-        for color, positions in self.etat.items():
-            for position, liste in positions.items():
-                if liste[0] == 'K':
-                    x, y = position
-                    coup_valide = [(x-1, y+1), (x, y+1), (x+1, y+1), (x+1, y), (x+1, y-1), (x, y-1), (x-1, y-1), (x-1, y)]
+def etat(state):
+    for color, info in state.items():
+        print(f"{color}: {len(info)} pions")
+        for position, liste in info.items():
+            print(f"{liste[0]}:{position}, coups valides = {liste[1]}")
 
-                    self.etat[color][position][1] = list(set(coup_valide) & positions_restantes)
-
-    def __reine(self, color=None, pos1=None, pos2=None, action=None):
-
-        # Déplacement d'une reine
-        if color and pos1 and pos2 is not None and action == 'move':
-            del self.etat[color][pos1]
-            self.etat[color][pos2] = ['Q', []]
-
-        # Suppression d'une reine
-        elif color and pos2 is not None and action == 'del':
-            del self.etat[color][pos2]
-
-        # Mise à jour des coups valides pour chaque reine
-        coord = [[position for position in positions.keys()] for positions in self.etat.values()]
-        positions_restantes = {(x, y) for x in range(1, 9) for y in range(1, 9)} - set(coord[0]+ coord[1])
-
-        for color, positions in self.etat.items():
-            for position, liste in positions.items():
-                if liste[0] == 'Q':
-                    x, y = position
-                    coup_valide = [
-                                    [(x+i, y+i) for i in range(1, 9)], [(x+i, y-i) for i in range(1, 9)],
-                                    [(x-i, y+i) for i in range(1, 9)], [(x-i, y-i) for i in range(1, 9)],
-                                    [(x, y+i) for i in range(1, 9)], [(x+i, y) for i in range(1, 9)],
-                                    [(x, y-i) for i in range(1, 9)], [(x-i, y) for i in range(1, 9)]
-                                    ]
-                    for i, direction in enumerate(coup_valide):
-                        for n, coord in enumerate(direction):
-                            if coord not in positions_restantes:
-                                del coup_valide[i][n:]
-                                break
-                    coup = []
-                    for direction in coup_valide:
-                        coup += direction
-
-                    self.etat[color][position][1] = coup
-
-    def __tour(self, color=None, pos1=None, pos2=None, action=None):
-
-        # Déplacement d'une tour
-        if color and pos1 and pos2 is not None and action == 'move':
-            del self.etat[color][pos1]
-            self.etat[color][pos2] = ['T', []]
-
-        # Suppression d'une tour
-        elif color and pos2 is not None and action == 'del':
-            del self.etat[color][pos2]
-
-        # Mise à jour des coups valides pour chaque tour
-        coord = [[position for position in positions.keys()] for positions in self.etat.values()]
-        positions_restantes = {(x, y) for x in range(1, 9) for y in range(1, 9)} - set(coord[0]+ coord[1])
-
-        for color, positions in self.etat.items():
-            for position, liste in positions.items():
-                if liste[0] == 'T':
-                    x, y = position
-                    coup_valide = [
-                                    [(x, y+i) for i in range(1, 9)], [(x+i, y) for i in range(1, 9)],
-                                    [(x, y-i) for i in range(1, 9)], [(x-i, y) for i in range(1, 9)]
-                                    ]
-                    for i, direction in enumerate(coup_valide):
-                        for n, coord in enumerate(direction):
-                            if coord not in positions_restantes:
-                                del coup_valide[i][n:]
-                                break
-                    coup = []
-                    for direction in coup_valide:
-                        coup += direction
-
-                    self.etat[color][position][1] = coup
-
-    def __cheval(self, color=None, pos1=None, pos2=None, action=None):
-
-        # Déplacement d'un cheval
-        if color and pos1 and pos2 is not None and action == 'move':
-            del self.etat[color][pos1]
-            self.etat[color][pos2] = ['C', []]
-
-        # Suppression d'un cheval
-        elif color and pos2 is not None and action == 'del':
-            del self.etat[color][pos2]
-
-        # Mise à jour des positions pour chaque cheval
-        coord = [[position for position in positions.keys()] for positions in self.etat.values()]
-        positions_restantes = {(x, y) for x in range(1, 9) for y in range(1, 9)} - set(coord[0]+ coord[1])
-
-        for color, positions in self.etat.items():
-            for position, liste in positions.items():
-                if liste[0] == 'C':
-                    x, y = position
-                    coup_valide = [(x+1, y+2), (x-1, y+2), (x+2, y+1), (x-2, y+1),
-                                (x+2, y-1), (x-2, y-1), (x+1, y-2), (x-1, y-2)]
-
-                    self.etat[color][position][1] = list(set(coup_valide) & positions_restantes)
-
-
-game = Chess('Jacob', 'Pascal')
-print(game)
-count = 0
-while count < 20:
-    game.play('black')
+def partie(name1, name2, nb_coup):
+    game = Chess(name1, name2)
+    etat(game.state())
     print(game)
-    game.play('white')
-    print(game)
-    count += 1
+    count = 0
+    while count < nb_coup:
+        game.autoplay('black')
+        etat(game.state())
+        print(game)
+        game.autoplay('white')
+        etat(game.state())
+        print(game)
+        count += 1
 
-
-# game.move('white', 'P', (1, 2), (1, 4))
-# print(game)
-# game.move('white', 'P', (1, 4), (1, 5))
-# print(game)
-# game.move('white', 'P', (1, 5), (1, 6))
-# print(game.state())
-# print(game)
-# game.eat('black', 'C', (2, 8), (1, 6))
-# print(game.state())
-# print(game)
-# game.move('black', 'C', (1, 6), (2, 4))
-# print(game.state())
-# print(game)
+partie('Jacob', 'Pascal', 5)

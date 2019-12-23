@@ -1,3 +1,5 @@
+import random
+
 
 class ChessError(Exception):
     """
@@ -104,10 +106,26 @@ class Chess:
         l'état actuelle de jeu (pour le moment, ne jouer qu'un coup valide
         pas nécessairement un bon coup)
 
+        :raise ChessError: si la couleur est ni 'black' ni 'white'
+
         :Argument: color
 
         :modifie: l'état de partie
         """
+        if color not in ['black', 'white']:
+            raise ChessError("Cette couleur n'existe pas aux échecs.")
+
+        # Choix random parmi l'état de jeu actuelle
+        piece, pos, coups = [], [], []
+        for position, info in self.state()[color].items():
+            if len(info[1]):
+                piece.append(info[0])
+                coups.append(info[1])
+                pos.append(position)
+
+        # Déplacement du pion choisi
+        coup = random.choice(list(zip(piece, pos, coups)))
+        self.move(color, coup[0], coup[1], random.choice(coup[2]))
 
     def state(self):
         """
@@ -378,28 +396,28 @@ class Chess:
 
                     self.etat[color][position][1] = list(set(coup_valide) & positions_restantes)
 
-        """
-        Permet de supprimer un pion de l'état actuelle de jeu
-
-        :Argument: pos (à supprimer)
-
-        :modifie: l'état de partie
-        """
-
 
 game = Chess('Jacob', 'Pascal')
-print(game.state())
 print(game)
-game.move('white', 'P', (1, 2), (1, 4))
-print(game)
-game.move('white', 'P', (1, 4), (1, 5))
-print(game)
-game.move('white', 'P', (1, 5), (1, 6))
-print(game.state())
-print(game)
-game.eat('black', 'C', (2, 8), (1, 6))
-print(game.state())
-print(game)
-game.move('black', 'C', (1, 6), (2, 4))
-print(game.state())
-print(game)
+count = 0
+while count < 20:
+    game.play('black')
+    print(game)
+    game.play('white')
+    print(game)
+    count += 1
+
+
+# game.move('white', 'P', (1, 2), (1, 4))
+# print(game)
+# game.move('white', 'P', (1, 4), (1, 5))
+# print(game)
+# game.move('white', 'P', (1, 5), (1, 6))
+# print(game.state())
+# print(game)
+# game.eat('black', 'C', (2, 8), (1, 6))
+# print(game.state())
+# print(game)
+# game.move('black', 'C', (1, 6), (2, 4))
+# print(game.state())
+# print(game)

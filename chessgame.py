@@ -61,7 +61,8 @@ class Chess:
         debut = ['   ', '━'*31, '\n']
         end = ['━━┃', '━'*31, '\n', '  ┃ ', '   '.join(str(n) for n in range(1, 9))]
 
-        return f"{title:^37}" + '\n' + ''.join(debut + d2 + end) + '\n' + f"White: {self.player1}" + '\n' + f"Black: {self.player2}"
+        return f"{title:^37}" + '\n' + ''.join(debut + d2 + end) + '\n' + \
+        f"White: {self.player1}" + '\n' + f"Black: {self.player2}"
 
     def move(self, color, piece, pos1, pos2):
         """
@@ -119,7 +120,7 @@ class Chess:
 
         return self.etat
 
-    def checkmate(self, color):
+    def ischeckmate(self, color):
         """
         Méthode vérifiant si le roi adverse est en position
         d'échec et mat
@@ -153,7 +154,7 @@ class Chess:
 
         return winner
 
-    def check(self, color):
+    def ischeck(self, color):
         """
         Vérifie si le roi adverse est en position d'échec
         :returns: booleen
@@ -288,21 +289,21 @@ def autogame(name1, name2, nb_coup=0):
         game.autoplay('white')
         # etat(game.state())
         print(game)
-        if game.checkmate('black'):
-            print(game.checkmate('black'))
+        if game.ischeckmate('black'):
+            print(game.ischeckmate('black'))
             break
 
         game.autoplay('black')
         # etat(game.state())
         print(game)
-        if game.checkmate('white'):
-            print(game.checkmate('white'))
+        if game.ischeckmate('white'):
+            print(game.ischeckmate('white'))
             break
 
 def handgame(name1, name2='Robot'):
     game = Chess(name1, name2)
     print(game)
-    # while not game.checkmate():
+    # while not game.ischeckmate():
     count = 0
     while count < 10:
         piece = input("Pion à déplacer (P, F, C, T, K, Q): ")

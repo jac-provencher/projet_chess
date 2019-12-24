@@ -14,6 +14,9 @@ class Chess:
         Accepte en argument le nom de deux joueurs en str
         :raise ChessError: si un des deux joueurs n'est pas une str
         """
+        if not isinstance(player1, str) or not isinstance(player2, str):
+            raise ChessError("Les deux joueurs doivent être des chaines de caractères.")
+
         self.player1 = player1
         self.player2 = player2
 
@@ -73,17 +76,16 @@ class Chess:
         :raise ChessError: si aucun pion ne se trouve à la position pos1
         :raise ChessError: si pos2 n'est pas un coup valide pour le pion 'piece'
         """
-        positions_pions = [[position for position in positions.keys()] for positions in self.state().values()]
-        positions_pions = positions_pions[0] + positions_pions[1]
-        coup_valide = self.state()[color][pos1][1]
-
         # Traitement d'erreurs
-        if color not in ['black', 'white']:
-            raise ChessError("Cette couleur n'existe pas aux échecs.")
-        elif pos1 not in positions_pions:
-            raise ChessError("Aucun pion ne se trouve à cette position.")
-        elif pos2 not in coup_valide:
-            raise ChessError("Ce déplacement est invalide.")
+        for x, y in [pos1, pos2]:
+            if not isinstance(x, int) or not isinstance(y, int):
+                raise ChessError("Veuillez entrer que des nombres entiers.")
+        # pos1 n'est liée à aucun pion sur l'échiquier
+        if pos1 not in self.__positions()['pions'][color]:
+            raise ChessError("Aucun pion ne peut être déplacer.")
+        # Déplacement invalide
+        elif pos2 not in self.state()[color][pos1][1]:
+            raise ChessError("Ce coup est invalide pour ce pion.")
 
         # Déplacement du pion 'piece'
         piece = self.etat[color][pos1][0]
@@ -97,6 +99,7 @@ class Chess:
         pas nécessairement un bon coup)
         :raise ChessError: si la couleur est ni 'black' ni 'white'
         """
+        # Traitement d'erreur
         if color not in ['black', 'white']:
             raise ChessError("Cette couleur n'existe pas aux échecs.")
 
@@ -168,15 +171,29 @@ class Chess:
         :raise ChessError: s'il n'y a aucun pion à la position pos2
         :raise ChessError: si le pion à la position pos2 n'est pas un pion adverse
         """
-        positions_pions = [[position for position in positions.keys()] for positions in self.state().values()]
-        positions_pions = positions_pions[0] + positions_pions[1]
-        couleur_adverse = {'black':'white', 'white':'black'}
 
         # Traitement d'erreurs
-        if pos2 not in positions_pions:
-            raise ChessError("Il n'y a aucun pion à bouffer à cette position")
-        elif pos2 not in self.state()[couleur_adverse[color]].keys():
-            raise ChessError("Ce pion n'est pas ennemi.")
+        for x, y in [pos1, pos2]:
+
+            # Une des deux coordonnées n'est pas un entier
+            if not isinstance(x, int) or not isinstance(y, int):
+                raise ChessError("Veuillez entrer que des nombres entiers.")
+
+            # Une des deux coordonnées n'est pas sur l'échiquier
+            elif not 1 <= x <= 8 or not 1 <= y <= 8:
+                raise ChessError("Une position est hors de l'échiquier.")
+
+        # pos1 n'est pas liée à un pion sur l'échiquier
+        if pos1 not in self.__positions()['pions'][color]:
+            raise ChessError("Aucun pion ne peut être déplacer.")
+
+        # pos2 n'est pas liée à un pion sur l'échiquier
+        elif pos2 not in self.__positions()['pions'][self.oppo[color]]:
+            raise ChessError("Aucun pion ne se trouve à la position d'attaque.")
+
+        # pos2 n'est pas un coup_for_eat valide
+        elif pos2 not in self.state()[color][pos1][2]:
+            raise ChessError("Coup d'attaque invalide.")
 
         # Suppression du pion à manger
         del self.etat[self.oppo[color]][pos2]
@@ -375,8 +392,11 @@ def handgame(name1, name2='Robot'):
         except ChessError as err:
             print(err)
             print(game)
+        except IndexError:
+            print(game)
+            print("Coup invalide, réessayer.")
 
         count += 1
 
-# handgame('Jacob')
-autogame('Jacob', 'Pascal', nb_coup=15)
+handgame('Jacob')
+# autogame('Jacob', 'Pascal', nb_coup=15)

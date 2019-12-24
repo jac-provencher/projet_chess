@@ -64,7 +64,7 @@ class Chess:
         return f"{title:^37}" + '\n' + ''.join(debut + d2 + end) + '\n' + \
         f"White: {self.player1}" + '\n' + f"Black: {self.player2}"
 
-    def move(self, color, piece, pos1, pos2):
+    def move(self, color, pos1, pos2):
         """
         Méthode permettant de déplacer le pion 'piece' situé à
         la position pos1 vers la position pos2.
@@ -78,14 +78,13 @@ class Chess:
         # Traitement d'erreurs
         if color not in ['black', 'white']:
             raise ChessError("Cette couleur n'existe pas aux échecs.")
-        elif piece not in ['P', 'K', 'F', 'Q', 'C', 'T']:
-            raise ChessError("Ce type de pion n'existe pas")
         elif pos1 not in positions_pions:
             raise ChessError("Aucun pion ne se trouve à cette position.")
         elif pos2 not in coup_valide:
             raise ChessError("Ce déplacement est invalide.")
 
         # Déplacement du pion 'piece'
+        piece = self.etat[color][pos1][0]
         del self.etat[color][pos1]
         self.etat[color][pos2] = [piece, [], []]
 
@@ -100,16 +99,15 @@ class Chess:
             raise ChessError("Cette couleur n'existe pas aux échecs.")
 
         # Choix random parmi l'état de jeu actuelle
-        piece, pos, coups = [], [], []
+        pos, coups = [], []
         for position, info in self.state()[color].items():
             if len(info[1]):
-                piece.append(info[0])
                 coups.append(info[1])
                 pos.append(position)
 
         # Déplacement du pion choisi
-        coup = random.choice(list(zip(piece, pos, coups)))
-        self.move(color, coup[0], coup[1], random.choice(coup[2]))
+        coup = random.choice(list(zip(pos, coups)))
+        self.move(color, coup[0], random.choice(coup[1]))
 
     def state(self):
         """
@@ -138,7 +136,7 @@ class Chess:
         # Récupération des coups valides pour le roi 'color'
         for info in self.state()[color].values():
             if info[0] == 'K':
-                coup_roi.add(info[1])
+                coup_roi.add(tuple(info[1]))
 
         # Récupération des coups valides des pions adverses
         for coups in self.state()[oppo[color]].values():
@@ -148,11 +146,11 @@ class Chess:
 
         # Vérification
         winner = False
-        # if not coup_roi:
-        for coup in coup_roi:
-            if len(coup_adverse) == len(coup_roi|coup_adverse):
-                winner = f"Le gagnant est {player[oppo[color]]}"
-                break
+        if not coup_roi:
+            for coup in coup_roi:
+                if len(coup_adverse) == len(coup_roi|coup_adverse):
+                    winner = f"Le gagnant est {player[oppo[color]]}"
+                    break
 
         return winner
 
@@ -162,7 +160,7 @@ class Chess:
         :returns: booleen
         """
 
-    def eat(self, color, piece, pos1, pos2):
+    def eat(self, color, pos1, pos2):
         """
         Méthode permettant de manger un pion adverse placé
         à la position pos2
@@ -184,7 +182,7 @@ class Chess:
         del self.etat[oppo_color][pos2]
 
         # Déplacement
-        self.move(color, piece, pos1, pos2)
+        self.move(color, pos1, pos2)
 
     def __positions(self):
 
@@ -332,7 +330,7 @@ def autogame(name1, name2, nb_coup=0):
     etat(game.state())
     print(game)
 
-    if nb_coup >= 0:
+    if nb_coup > 0:
         count = 0
         while count < nb_coup:
             game.autoplay('white')
@@ -364,11 +362,14 @@ def handgame(name1, name2='Robot'):
     # while not game.isCheckmate():
     count = 0
     while count < 10:
-        piece = input("Pion à déplacer (P, F, C, T, K, Q): ")
+        action = input("Type de coup (m, e): ")
         pos1 = input("Position du pion xy: ")
         pos2 = input("Position de déplacement xy: ")
         try:
-            game.move('white', piece, (int(pos1[0]), int(pos1[1])), (int(pos2[0]), int(pos2[1])))
+            if action == 'm':
+                game.move('white', (int(pos1[0]), int(pos1[1])), (int(pos2[0]), int(pos2[1])))
+            elif action == 'e':
+                game.eat('white', (int(pos1[0]), int(pos1[1])), (int(pos2[0]), int(pos2[1])))
             print(game)
             game.autoplay('black')
             print(game)
@@ -378,6 +379,5 @@ def handgame(name1, name2='Robot'):
 
         count += 1
 
-# handgame('Jacob')
-autogame('Jacob', 'Pascal', nb_coup=40)
-
+handgame('Jacob')
+# autogame('Jacob', 'Pascal', nb_coup=15)

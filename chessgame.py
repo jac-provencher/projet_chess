@@ -16,6 +16,7 @@ class Chess:
         """
         self.player1 = player1
         self.player2 = player2
+
         self.etat = {
                 'black': {
                     (1, 7): ['P', []], (2, 7): ['P', []], (3, 7): ['P', []], (4, 7): ['P', []],
@@ -31,6 +32,11 @@ class Chess:
                         }
                     }
 
+        self.pieces = {
+                    'black': {'P': '♙', 'C': '♘', 'F': '♗', 'Q': '♕', 'K': '♔', 'T': '♖'},
+                    'white': {'P': '♟', 'C': '♞', 'F': '♝', 'Q': '♛', 'K': '♚', 'T': '♜'}
+                    }
+
     def __str__(self):
 
         # Construction du damier
@@ -41,19 +47,19 @@ class Chess:
                 ligne[n] = '.'
         d2 = []
         for ligne in d1:
-            ligne[2] = ligne[34] = '|'
+            ligne[2] = ligne[34] = '┃'
             d2 += ligne + ['\n']
 
         # Position des joueurs
-        for positions in self.state().values():
-            for pos, liste in positions.items():
-                x, y = pos
-                d2[36*(16-2*y)+4*x] = liste[0]
+        for color, dico in self.state().items():
+            for position, info in dico.items():
+                x, y = position
+                d2[36*(16-2*y)+4*x] = self.pieces[color][info[0]]
 
         # Affiche du damier
         title = "Chessgame"
-        debut = ['   ', '-'*31, '\n']
-        end = ['--|', '-'*31, '\n', '  | ', '   '.join(str(n) for n in range(1, 9))]
+        debut = ['   ', '━'*31, '\n']
+        end = ['━━┃', '━'*31, '\n', '  ┃ ', '   '.join(str(n) for n in range(1, 9))]
 
         return f"{title:^37}" + '\n' + ''.join(debut + d2 + end) + '\n' + f"White: {self.player1}" + '\n' + f"Black: {self.player2}"
 
@@ -139,11 +145,11 @@ class Chess:
                     coup_adverse.add(coup)
 
         winner = False
-        if not coup_roi:
-            for coup in coup_roi:
-                if len(coup_adverse) == len(coup_roi|coup_adverse):
-                    winner = f"Le gagnant est {player[oppo[color]]}"
-                    break
+        # if not coup_roi:
+        for coup in coup_roi:
+            if len(coup_adverse) == len(coup_roi|coup_adverse):
+                winner = f"Le gagnant est {player[oppo[color]]}"
+                break
 
         return winner
 

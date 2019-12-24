@@ -19,16 +19,16 @@ class Chess:
 
         self.etat = {
                 'black': {
-                    (1, 7): ['P', []], (2, 7): ['P', []], (3, 7): ['P', []], (4, 7): ['P', []],
-                    (5, 7): ['P', []], (6, 7): ['P', []], (7, 7): ['P', []], (8, 7): ['P', []],
-                    (1, 8): ['T', []], (8, 8): ['T', []], (2, 8): ['C', []], (7, 8): ['C', []],
-                    (3, 8): ['F', []], (6, 8): ['F', []], (5, 8): ['K', []], (4, 8): ['Q', []]
+                    (1, 7): ['P', [], []], (2, 7): ['P', [], []], (3, 7): ['P', [], []], (4, 7): ['P', [], []],
+                    (5, 7): ['P', [], []], (6, 7): ['P', [], []], (7, 7): ['P', [], []], (8, 7): ['P', [], []],
+                    (1, 8): ['T', [], []], (8, 8): ['T', [], []], (2, 8): ['C', [], []], (7, 8): ['C', [], []],
+                    (3, 8): ['F', [], []], (6, 8): ['F', [], []], (5, 8): ['K', [], []], (4, 8): ['Q', [], []]
                         },
                 'white': {
-                    (1, 2): ['P', []], (2, 2): ['P', []], (3, 2): ['P', []], (4, 2): ['P', []],
-                    (5, 2): ['P', []], (6, 2): ['P', []], (7, 2): ['P', []], (8, 2): ['P', []],
-                    (1, 1): ['T', []], (8, 1): ['T', []], (2, 1): ['C', []], (7, 1): ['C', []],
-                    (3, 1): ['F', []], (6, 1): ['F', []], (4, 1): ['K', []], (5, 1): ['Q', []]
+                    (1, 2): ['P', [], []], (2, 2): ['P', [], []], (3, 2): ['P', [], []], (4, 2): ['P', [], []],
+                    (5, 2): ['P', [], []], (6, 2): ['P', [], []], (7, 2): ['P', [], []], (8, 2): ['P', [], []],
+                    (1, 1): ['T', [], []], (8, 1): ['T', [], []], (2, 1): ['C', [], []], (7, 1): ['C', [], []],
+                    (3, 1): ['F', [], []], (6, 1): ['F', [], []], (4, 1): ['K', [], []], (5, 1): ['Q', [], []]
                         }
                     }
 
@@ -87,7 +87,7 @@ class Chess:
 
         # Déplacement du pion 'piece'
         del self.etat[color][pos1]
-        self.etat[color][pos2] = [piece, []]
+        self.etat[color][pos2] = [piece, [], []]
 
     def autoplay(self, color):
         """
@@ -120,7 +120,7 @@ class Chess:
 
         return self.etat
 
-    def ischeckmate(self, color):
+    def isCheckmate(self, color):
         """
         Méthode vérifiant si le roi adverse est en position
         d'échec et mat
@@ -135,10 +135,9 @@ class Chess:
         oppo = {'black':'white', 'white':'black'}
         coup_roi, coup_adverse = set(), set()
 
-        for piece, coups in self.state()[color].values():
-            for coup in coups:
-                if piece == 'K':
-                    coup_roi.add(coup)
+        for info in self.state()[color].values():
+            if info[0] == 'K':
+                coup_roi.add(info[1])
 
         for coups in self.state()[oppo[color]].values():
             if coups[1]:
@@ -154,7 +153,7 @@ class Chess:
 
         return winner
 
-    def ischeck(self, color):
+    def isCheck(self, color):
         """
         Vérifie si le roi adverse est en position d'échec
         :returns: booleen
@@ -187,8 +186,11 @@ class Chess:
     def __pieces(self):
 
         # Mise à jour des coups valides
-        coord = [[position for position in positions.keys()] for positions in self.etat.values()]
-        positions_restantes = {(x, y) for x in range(1, 9) for y in range(1, 9)} - set(coord[0] + coord[1])
+        coord = {}
+        for team, positions in self.etat.items():
+            coord[team] = {position for position in positions.keys()}
+        positions_restantes = {(x, y) for x in range(1, 9) for y in range(1, 9)} - (coord['black']|coord['white'])
+        oppo = {'black':'white', 'white':'black'}
 
         for color, positions in self.etat.items():
             for position, liste in positions.items():
@@ -255,7 +257,11 @@ class Chess:
 
                     # Positions fixes
                     if liste[0] in ['K', 'C']:
+
+                        # Coups valides de déplacement
                         self.etat[color][position][1] = list(set(coup_valide[liste[0]]) & positions_restantes)
+                        # Coups valides pour bouffer
+                        self.etat[color][position][2] = list(set(coup_valide[liste[0]]) & coord[oppo[color]])
 
                     # Positions longues portées
                     else:
@@ -284,26 +290,34 @@ def autogame(name1, name2, nb_coup=0):
     etat(game.state())
     print(game)
 
-    while True:
+    if nb_coup >= 0:
+        count = 0
+        while count < nb_coup:
+            game.autoplay('white')
+            print(game)
+            game.autoplay('black')
+            print(game)
+            count += 1
 
-        game.autoplay('white')
-        # etat(game.state())
-        print(game)
-        if game.ischeckmate('black'):
-            print(game.ischeckmate('black'))
-            break
-
-        game.autoplay('black')
-        # etat(game.state())
-        print(game)
-        if game.ischeckmate('white'):
-            print(game.ischeckmate('white'))
-            break
+    else:
+        while True:
+            game.autoplay('white')
+            # etat(game.state())
+            print(game)
+            if game.isCheckmate('black'):
+                print(game.isCheckmate('black'))
+                break
+            game.autoplay('black')
+            # etat(game.state())
+            print(game)
+            if game.isCheckmate('white'):
+                print(game.isCheckmate('white'))
+                break
 
 def handgame(name1, name2='Robot'):
     game = Chess(name1, name2)
     print(game)
-    # while not game.ischeckmate():
+    # while not game.isCheckmate():
     count = 0
     while count < 10:
         piece = input("Pion à déplacer (P, F, C, T, K, Q): ")
@@ -321,4 +335,4 @@ def handgame(name1, name2='Robot'):
         count += 1
 
 # handgame('Jacob')
-autogame('Jacob', 'Pascal')
+autogame('Jacob', 'Pascal', nb_coup=1)

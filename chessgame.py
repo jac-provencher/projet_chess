@@ -80,9 +80,11 @@ class Chess:
         for x, y in [pos1, pos2]:
             if not isinstance(x, int) or not isinstance(y, int):
                 raise ChessError("Veuillez entrer que des nombres entiers.")
+
         # pos1 n'est liée à aucun pion sur l'échiquier
         if pos1 not in self.__positions()['pions'][color]:
             raise ChessError("Aucun pion ne peut être déplacer.")
+
         # Déplacement invalide
         elif pos2 not in self.state()[color][pos1][1]:
             raise ChessError("Ce coup est invalide pour ce pion.")
@@ -398,5 +400,5 @@ def handgame(name1, name2='Robot'):
 
         count += 1
 
-handgame('Jacob')
-# autogame('Jacob', 'Pascal', nb_coup=15)
+# handgame('Jacob')
+autogame('Jacob', 'Pascal', nb_coup=1000)

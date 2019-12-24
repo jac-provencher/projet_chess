@@ -39,7 +39,7 @@ class Chess:
 
     def __str__(self):
 
-        # Construction du damier
+        # Construction de l'équiquier
         d1 = [[' ' for _ in range(35)] for _ in range(15)]
         for i, ligne in enumerate(d1[::2]):
             ligne[0] = str(8 - i)
@@ -56,7 +56,7 @@ class Chess:
                 x, y = position
                 d2[36*(16-2*y)+4*x] = self.pieces[color][info[0]]
 
-        # Affiche du damier
+        # Affiche de l'échiquier
         title = "Chessgame"
         debut = ['   ', '━'*31, '\n']
         end = ['━━┃', '━'*31, '\n', '  ┃ ', '   '.join(str(n) for n in range(1, 9))]
@@ -135,15 +135,18 @@ class Chess:
         oppo = {'black':'white', 'white':'black'}
         coup_roi, coup_adverse = set(), set()
 
+        # Récupération des coups valides pour le roi 'color'
         for info in self.state()[color].values():
             if info[0] == 'K':
                 coup_roi.add(info[1])
 
+        # Récupération des coups valides des pions adverses
         for coups in self.state()[oppo[color]].values():
             if coups[1]:
                 for coup in coups[1]:
                     coup_adverse.add(coup)
 
+        # Vérification
         winner = False
         # if not coup_roi:
         for coup in coup_roi:
@@ -199,6 +202,7 @@ class Chess:
 
         # Mise à jour des coups valides
         pos_free = self.__positions()['libres']
+        pos_pions = self.__positions()['pions']
         oppo = {'black':'white', 'white':'black'}
 
         for color, positions in self.etat.items():
@@ -208,6 +212,7 @@ class Chess:
                 if liste[0] == 'P':
 
                     if color == 'black':
+                        # Pion noir est sur la ligne de départ
                         if y == 7:
                             coup_valide = [(x, y-i) for i in range(1, 3)]
                             for i, coord in enumerate(coup_valide):
@@ -216,13 +221,23 @@ class Chess:
                                     break
                             self.etat['black'][position][1] = coup_valide
 
+                        # Pion noir n'est pas sur la ligne de départ et peut avancer
                         elif (x, y-1) in pos_free:
                             self.etat['black'][position][1] = [(x, y-1)]
 
+                        # Pion noir ne peut pas avancer
                         else:
                             self.etat['black'][position][1] = []
 
+                        # Positions que le pion noir peut aller pour bouffer
+                        coup_for_eat = []
+                        for pos in [(x+1, y-1), (x-1, y-1)]:
+                            if pos in pos_pions[oppo[color]]:
+                                coup_for_eat.append(pos)
+                        self.etat['black'][position][2] = coup_for_eat
+
                     elif color == 'white':
+                        # Pion blanc est sur la ligne de départ
                         if y == 2:
                             coup_valide = [(x, y+i) for i in range(1, 3)]
                             for i, coord in enumerate(coup_valide):
@@ -231,11 +246,20 @@ class Chess:
                                     break
                             self.etat['white'][position][1] = coup_valide
 
+                        # Pion blanc n'est pas sur la ligne de départ et peut avancer
                         elif (x, y+1) in pos_free:
                             self.etat['white'][position][1] = [(x, y+1)]
 
+                        # Pion blanc ne peut pas avancer
                         else:
                             self.etat['white'][position][1] = []
+
+                        # Positions que le pion blanc peut aller pour bouffer
+                        coup_for_eat = []
+                        for pos in [(x-1, y+1), (x+1, y+1)]:
+                            if pos in pos_pions[oppo[color]]:
+                                coup_for_eat.append(pos)
+                        self.etat['white'][position][2] = coup_for_eat
 
                 else:
                     # Revoir pour simplifier les 'for i in range(1, 9)'
@@ -270,7 +294,7 @@ class Chess:
                         # Coups valides de déplacement
                         self.etat[color][position][1] = list(set(coup_valide[liste[0]]) & pos_free)
                         # Coups valides pour bouffer
-                        self.etat[color][position][2] = list(set(coup_valide[liste[0]]) & self.__positions()['pions'][oppo[color]])
+                        self.etat[color][position][2] = list(set(coup_valide[liste[0]]) & pos_pions[oppo[color]])
 
                     # Positions longues portées
                     else:
@@ -278,21 +302,20 @@ class Chess:
 
                         for i, direction in enumerate(coup_valide[liste[0]]):
                             for n, coord in enumerate(direction):
-
                                 if coord not in pos_free:
                                     del coup_valide[liste[0]][i][n:]
                                     x, y = coord
-
-                                    if 1 <= x <= 8 and 1 <= y <= 8 and coord in self.__positions()['pions'][oppo[color]]:
+                                    if 1 <= x <= 8 and 1 <= y <= 8 and coord in pos_pions[oppo[color]]:
                                         coup_for_eat.append(coord)
-
                                     break
 
                         moves = []
                         for direction in coup_valide[liste[0]]:
                             moves += direction
 
+                        # Coups valides pour déplacement
                         self.etat[color][position][1] = moves
+                        # Coups valides pour bouffer
                         self.etat[color][position][2] = coup_for_eat
 
 def etat(state):
@@ -300,7 +323,7 @@ def etat(state):
     for color, info in state.items():
         print(f"{color}:")
         for position, liste in info.items():
-            print(f"{liste[0]}:{position}, moves = {liste[1]}, to eat = {liste[2]}")
+            print(f"{liste[0]}:{position}  moves = {liste[1]}, to eat = {liste[2]}")
             total.add(position)
     print(f"{len(total)} pions sur l'échiquier")
 
@@ -356,5 +379,5 @@ def handgame(name1, name2='Robot'):
         count += 1
 
 # handgame('Jacob')
-autogame('Jacob', 'Pascal', nb_coup=20)
+autogame('Jacob', 'Pascal', nb_coup=40)
 

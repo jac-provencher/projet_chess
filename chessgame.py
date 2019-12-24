@@ -37,6 +37,8 @@ class Chess:
                     'white': {'P': '♟', 'C': '♞', 'F': '♝', 'Q': '♛', 'K': '♚', 'T': '♜'}
                     }
 
+        self.oppo = {'black':'white', 'white':'black'}
+
     def __str__(self):
 
         # Construction de l'équiquier
@@ -130,7 +132,6 @@ class Chess:
         player = {'black':self.player1, 'white':self.player2}
 
         # Coups valides pour chaque couleur
-        oppo = {'black':'white', 'white':'black'}
         coup_roi, coup_adverse = set(), set()
 
         # Récupération des coups valides pour le roi 'color'
@@ -139,7 +140,7 @@ class Chess:
                 coup_roi.add(tuple(info[1]))
 
         # Récupération des coups valides des pions adverses
-        for coups in self.state()[oppo[color]].values():
+        for coups in self.state()[self.oppo[color]].values():
             if coups[1]:
                 for coup in coups[1]:
                     coup_adverse.add(coup)
@@ -149,7 +150,7 @@ class Chess:
         if not coup_roi:
             for coup in coup_roi:
                 if len(coup_adverse) == len(coup_roi|coup_adverse):
-                    winner = f"Le gagnant est {player[oppo[color]]}"
+                    winner = f"Le gagnant est {player[self.oppo[color]]}"
                     break
 
         return winner
@@ -178,8 +179,7 @@ class Chess:
             raise ChessError("Ce pion n'est pas ennemi.")
 
         # Suppression du pion à manger
-        oppo_color = couleur_adverse[color]
-        del self.etat[oppo_color][pos2]
+        del self.etat[self.oppo[color]][pos2]
 
         # Déplacement
         self.move(color, pos1, pos2)
@@ -201,7 +201,6 @@ class Chess:
         # Mise à jour des coups valides
         pos_free = self.__positions()['libres']
         pos_pions = self.__positions()['pions']
-        oppo = {'black':'white', 'white':'black'}
 
         for color, positions in self.etat.items():
             for position, liste in positions.items():
@@ -230,7 +229,7 @@ class Chess:
                         # Positions que le pion noir peut aller pour bouffer
                         coup_for_eat = []
                         for pos in [(x+1, y-1), (x-1, y-1)]:
-                            if pos in pos_pions[oppo[color]]:
+                            if pos in pos_pions[self.oppo[color]]:
                                 coup_for_eat.append(pos)
                         self.etat['black'][position][2] = coup_for_eat
 
@@ -255,7 +254,7 @@ class Chess:
                         # Positions que le pion blanc peut aller pour bouffer
                         coup_for_eat = []
                         for pos in [(x-1, y+1), (x+1, y+1)]:
-                            if pos in pos_pions[oppo[color]]:
+                            if pos in pos_pions[self.oppo[color]]:
                                 coup_for_eat.append(pos)
                         self.etat['white'][position][2] = coup_for_eat
 
@@ -292,7 +291,7 @@ class Chess:
                         # Coups valides de déplacement
                         self.etat[color][position][1] = list(set(coup_valide[liste[0]]) & pos_free)
                         # Coups valides pour bouffer
-                        self.etat[color][position][2] = list(set(coup_valide[liste[0]]) & pos_pions[oppo[color]])
+                        self.etat[color][position][2] = list(set(coup_valide[liste[0]]) & pos_pions[self.oppo[color]])
 
                     # Positions longues portées
                     else:
@@ -303,7 +302,7 @@ class Chess:
                                 if coord not in pos_free:
                                     del coup_valide[liste[0]][i][n:]
                                     x, y = coord
-                                    if 1 <= x <= 8 and 1 <= y <= 8 and coord in pos_pions[oppo[color]]:
+                                    if 1 <= x <= 8 and 1 <= y <= 8 and coord in pos_pions[self.oppo[color]]:
                                         coup_for_eat.append(coord)
                                     break
 
@@ -379,5 +378,5 @@ def handgame(name1, name2='Robot'):
 
         count += 1
 
-handgame('Jacob')
-# autogame('Jacob', 'Pascal', nb_coup=15)
+# handgame('Jacob')
+autogame('Jacob', 'Pascal', nb_coup=15)

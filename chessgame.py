@@ -113,7 +113,7 @@ class Chess:
 
         return self.etat
 
-    def checkmate(self):
+    def checkmate(self, color):
         """
         Méthode vérifiant si le roi adverse est en position
         d'échec et mat
@@ -125,26 +125,29 @@ class Chess:
         player = {'black':self.player1, 'white':self.player2}
 
         # Coups valides pour chaque couleur
-        coup_valide = {'white':set(), 'black':set()}
         oppo = {'black':'white', 'white':'black'}
+        coup_roi, coup_adverse = set(), set()
 
-        for color in self.state().keys():
-            for coups in [coord[1] for coord in self.state()[color].values() if coord[1]]:
-                for coup in coups:
-                    coup_valide[color].add(coup)
-
-        for color, info in self.state().items():
-            for piece, coups in info.values():
+        for piece, coups in self.state()[color].values():
+            for coup in coups:
                 if piece == 'K':
-                    for coord in set(coups):
-                        if coord not in coup_valide[oppo[color]]:
-                            return False
-                        else:
-                            return f"Le gagnant est {player[color]}!"
+                    coup_roi.add(coup)
 
-        return False
+        for coups in self.state()[oppo[color]].values():
+            if coups[1]:
+                for coup in coups[1]:
+                    coup_adverse.add(coup)
 
-    def check(self):
+        winner = False
+        if not coup_roi:
+            for coup in coup_roi:
+                if len(coup_adverse) == len(coup_roi|coup_adverse):
+                    winner = f"Le gagnant est {player[oppo[color]]}"
+                    break
+
+        return winner
+
+    def check(self, color):
         """
         Vérifie si le roi adverse est en position d'échec
         :returns: booleen
@@ -274,20 +277,20 @@ def autogame(name1, name2, nb_coup=0):
     etat(game.state())
     print(game)
 
-    while not game.checkmate():
-
-        game.autoplay('black')
-        etat(game.state())
-        print(game)
-        if game.checkmate():
-            print(game.checkmate())
-            break
+    while True:
 
         game.autoplay('white')
-        etat(game.state())
+        # etat(game.state())
         print(game)
-        if game.checkmate():
-            print(game.checkmate())
+        if game.checkmate('black'):
+            print(game.checkmate('black'))
+            break
+
+        game.autoplay('black')
+        # etat(game.state())
+        print(game)
+        if game.checkmate('white'):
+            print(game.checkmate('white'))
             break
 
 def handgame(name1, name2='Robot'):

@@ -121,7 +121,7 @@ class Chess:
         Méthode permet de retourne l'état de partie actuelle
         :returns: l'état de partie (qui sera utilisé pour __str__, donc sans les coups valides)
         """
-        self.__pieces(self.etat)
+        self.__pieces()
 
         return self.etat
 
@@ -159,13 +159,18 @@ class Chess:
         sacrifice = {}
         for color, dico in self.state().items():
             sacrifice[color] = {position:[info[0], info[1]] for position, info in dico.items() if info[1]}
+
         for pos, info in sacrifice[color].items():
             del self.etat[color][pos]
+
+            # Essaie pour chaque déplacement et vérif si le roi est en échec
             for move in info[1]:
                 self.etat[color][move] = [info[0], [], []]
                 if not self.isCheck(color):
                     return False
                 del self.etat[color][move]
+
+            self.etat[color][pos] = [info[0], [], []]
 
         return f"Le gagnant est {player[self.oppo[color]]}!"
 
@@ -187,7 +192,6 @@ class Chess:
         :raise ChessError: s'il n'y a aucun pion à la position pos2
         :raise ChessError: si le pion à la position pos2 n'est pas un pion adverse
         """
-
         # Traitement d'erreurs
         for x, y in [pos1, pos2]:
 
@@ -211,13 +215,13 @@ class Chess:
         elif pos2 not in self.state()[color][pos1][2]:
             raise ChessError("Coup d'attaque invalide.")
 
-        # Suppression du pion à manger
-        del self.etat[self.oppo[color]][pos2]
-
-        # Déplacement du pion
-        piece = self.etat[color][pos1][0]
-        del self.etat[color][pos1]
-        self.etat[color][pos2] = [piece, [], []]
+        # Déplacement et suppression des pions
+        if self.etat[color][pos1][0] == 'P':
+            self.move(color, pos1, pos2)
+            del self.etat[self.oppo[color]][pos2]
+        else:
+            del self.etat[self.oppo[color]][pos2]
+            self.move(color, pos1, pos2)
 
     def __positions(self):
         """
@@ -256,13 +260,13 @@ class Chess:
 
         return {'deplacement':move, 'capture':eat}
 
-    def __pieces(self, etat):
+    def __pieces(self):
 
         # Mise à jour des coups valides
         pos_free = self.__positions()['libres']
         pos_pions = self.__positions()['pions']
 
-        for color, positions in etat.items():
+        for color, positions in self.etat.items():
             for position, liste in positions.items():
                 x, y = position
 
@@ -276,22 +280,24 @@ class Chess:
                                 if coord not in pos_free:
                                     del coup_valide[i:]
                                     break
-                            etat['black'][position][1] = coup_valide
+                            self.etat['black'][position][1] = coup_valide
 
                         # Pion noir n'est pas sur la ligne de départ et peut avancer
                         elif (x, y-1) in pos_free:
-                            etat['black'][position][1] = [(x, y-1)]
+                            self.etat['black'][position][1] = [(x, y-1)]
 
                         # Pion noir ne peut pas avancer
                         else:
-                            etat['black'][position][1] = []
+                            self.etat['black'][position][1] = []
 
                         # Positions que le pion noir peut aller pour bouffer
                         coup_for_eat = []
                         for pos in [(x+1, y-1), (x-1, y-1)]:
                             if pos in pos_pions[self.oppo[color]]:
                                 coup_for_eat.append(pos)
-                        etat['black'][position][2] = coup_for_eat
+
+                        self.etat['black'][position][1] += coup_for_eat
+                        self.etat['black'][position][2] = coup_for_eat
 
                     elif color == 'white':
                         # Pion blanc est sur la ligne de départ
@@ -301,22 +307,24 @@ class Chess:
                                 if coord not in pos_free:
                                     del coup_valide[i:]
                                     break
-                            etat['white'][position][1] = coup_valide
+                            self.etat['white'][position][1] = coup_valide
 
                         # Pion blanc n'est pas sur la ligne de départ et peut avancer
                         elif (x, y+1) in pos_free:
-                            etat['white'][position][1] = [(x, y+1)]
+                            self.etat['white'][position][1] = [(x, y+1)]
 
                         # Pion blanc ne peut pas avancer
                         else:
-                            etat['white'][position][1] = []
+                            self.etat['white'][position][1] = []
 
                         # Positions que le pion blanc peut aller pour bouffer
                         coup_for_eat = []
                         for pos in [(x-1, y+1), (x+1, y+1)]:
                             if pos in pos_pions[self.oppo[color]]:
                                 coup_for_eat.append(pos)
-                        etat['white'][position][2] = coup_for_eat
+
+                        self.etat['white'][position][1] += coup_for_eat
+                        self.etat['white'][position][2] = coup_for_eat
 
                 else:
                     # Revoir pour simplifier les 'for i in range(1, 9)'
@@ -349,9 +357,9 @@ class Chess:
                     if liste[0] in ['K', 'C']:
 
                         # Coups valides de déplacement
-                        etat[color][position][1] = list(set(coup_valide[liste[0]]) & pos_free)
+                        self.etat[color][position][1] = list(set(coup_valide[liste[0]]) & pos_free)
                         # Coups valides pour bouffer
-                        etat[color][position][2] = list(set(coup_valide[liste[0]]) & pos_pions[self.oppo[color]])
+                        self.etat[color][position][2] = list(set(coup_valide[liste[0]]) & pos_pions[self.oppo[color]])
 
                     # Positions longues portées
                     else:
@@ -371,9 +379,9 @@ class Chess:
                             moves += direction
 
                         # Coups valides pour déplacement
-                        etat[color][position][1] = moves
+                        self.etat[color][position][1] = moves
                         # Coups valides pour bouffer
-                        etat[color][position][2] = coup_for_eat
+                        self.etat[color][position][2] = coup_for_eat
 
 def etat(state):
     total = set()

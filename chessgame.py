@@ -76,6 +76,8 @@ class Chess:
         :raise ChessError: si aucun pion ne se trouve à la position pos1
         :raise ChessError: si pos2 n'est pas un coup valide pour le pion 'piece'
         """
+        pion = self.state()[color][pos1]
+
         # Traitement d'erreurs
         for x, y in [pos1, pos2]:
             if not isinstance(x, int) or not isinstance(y, int):
@@ -85,8 +87,12 @@ class Chess:
         if pos1 not in self.__positions()['pions'][color]:
             raise ChessError("Aucun pion ne peut être déplacer.")
 
-        # Déplacement invalide
-        elif pos2 not in self.state()[color][pos1][1]:
+        # Déplacement invalide pour un pion
+        elif pion[0] == 'P' and pos2 not in pion[1] + pion[2]:
+            raise ChessError("Ce coup est invalide pour un pion.")
+
+        # Déplacement invalide pour les autres pions
+        elif pion[0] in ['K', 'Q', 'F', 'C', 'T'] and pos2 not in pion[1]:
             raise ChessError("Ce coup est invalide pour ce pion.")
 
         # Déplacement du pion 'piece'
@@ -105,16 +111,27 @@ class Chess:
         if color not in ['black', 'white']:
             raise ChessError("Cette couleur n'existe pas aux échecs.")
 
-        # Choix random parmi l'état de jeu actuelle
-        pos, coups = [], []
-        for position, info in self.state()[color].items():
-            if len(info[1]):
-                coups.append(info[1])
-                pos.append(position)
+        elif self.isCheckmate(color):
+            raise ChessError("La partie est terminée.")
 
-        # Déplacement du pion choisi
-        coup = random.choice(list(zip(pos, coups)))
-        self.move(color, coup[0], random.choice(coup[1]))
+        value = {'K':0, 'P':1, 'F':2, 'T':3, 'C':4, 'Q':5}
+        color_pos = [position for position, info in self.state()[color].items() if info[1] or info[2]]
+        coord = random.choice(color_pos)
+        pion = self.state()[color][coord]
+
+        # Si possible de manger
+        if pion[2]:
+            best = 0
+            for pos in pion[2]:
+                if value[self.state()[self.oppo[color]][pos][0]] > best and self.state()[self.oppo[color]][pos][0] != 'K':
+                    best = value[self.state()[self.oppo[color]][pos][0]]
+                    best_pos = pos
+            self.eat(color, coord, best_pos)
+
+        # Autrement, se déplacer
+        elif pion[1]:
+            move = random.choice(pion[1])
+            self.move(color, coord, move)
 
     def state(self):
         """
@@ -295,8 +312,6 @@ class Chess:
                         for pos in [(x+1, y-1), (x-1, y-1)]:
                             if pos in pos_pions[self.oppo[color]]:
                                 coup_for_eat.append(pos)
-
-                        self.etat['black'][position][1] += coup_for_eat
                         self.etat['black'][position][2] = coup_for_eat
 
                     elif color == 'white':
@@ -322,8 +337,6 @@ class Chess:
                         for pos in [(x-1, y+1), (x+1, y+1)]:
                             if pos in pos_pions[self.oppo[color]]:
                                 coup_for_eat.append(pos)
-
-                        self.etat['white'][position][1] += coup_for_eat
                         self.etat['white'][position][2] = coup_for_eat
 
                 else:
@@ -454,5 +467,5 @@ def handgame(name1, name2='Robot'):
             print(game)
             print("Coup invalide, réessayer.")
 
-handgame('Jacob')
-# autogame('Jacob', 'Pascal', nb_coup=50)
+# handgame('Jacob')
+autogame('Jacob', 'Pascal', nb_coup=500)

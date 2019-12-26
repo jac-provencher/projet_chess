@@ -19,7 +19,6 @@ class Chess:
 
         self.player1 = player1
         self.player2 = player2
-
         self.etat = {
                 'black': {
                     (1, 7): ['P', [], []], (2, 7): ['P', [], []], (3, 7): ['P', [], []], (4, 7): ['P', [], []],
@@ -34,13 +33,13 @@ class Chess:
                     (3, 1): ['F', [], []], (6, 1): ['F', [], []], (4, 1): ['K', [], []], (5, 1): ['Q', [], []]
                         }
                     }
-
         self.pieces = {
                     'black': {'P': '♙', 'C': '♘', 'F': '♗', 'Q': '♕', 'K': '♔', 'T': '♖'},
                     'white': {'P': '♟', 'C': '♞', 'F': '♝', 'Q': '♛', 'K': '♚', 'T': '♜'}
                     }
-
         self.oppo = {'black':'white', 'white':'black'}
+        self.value = {'K':0, 'P':1, 'F':2, 'T':3, 'C':4, 'Q':5}
+        self.ate = {'black':[], 'white':[]}
 
     def __str__(self):
 
@@ -114,7 +113,6 @@ class Chess:
         elif self.isCheckmate(color):
             raise ChessError("La partie est terminée.")
 
-        value = {'K':0, 'P':1, 'F':2, 'T':3, 'C':4, 'Q':5}
         color_pos = [position for position, info in self.state()[color].items() if info[1] or info[2]]
         coord = random.choice(color_pos)
         pion = self.state()[color][coord]
@@ -123,8 +121,8 @@ class Chess:
         if pion[2]:
             best = 0
             for pos in pion[2]:
-                if value[self.state()[self.oppo[color]][pos][0]] > best and self.state()[self.oppo[color]][pos][0] != 'K':
-                    best = value[self.state()[self.oppo[color]][pos][0]]
+                if self.value[self.state()[self.oppo[color]][pos][0]] > best and self.state()[self.oppo[color]][pos][0] != 'K':
+                    best = self.value[self.state()[self.oppo[color]][pos][0]]
                     best_pos = pos
             self.eat(color, coord, best_pos)
 
@@ -235,10 +233,35 @@ class Chess:
         # Déplacement et suppression des pions
         if self.etat[color][pos1][0] == 'P':
             self.move(color, pos1, pos2)
+            self.ate[self.oppo[color]].append((self.value['P'], 'P'))
             del self.etat[self.oppo[color]][pos2]
         else:
+            piece = self.etat[self.oppo[color]][pos2][0]
+            if piece != 'P':
+                self.ate[self.oppo[color]].append((self.value[piece], piece))
             del self.etat[self.oppo[color]][pos2]
             self.move(color, pos1, pos2)
+
+    def exchange_pion(self):
+        """
+        Méthode qui permet d'échanger le pion par
+        le meilleur pion déjà manger
+        """
+        endline = {'black':1, 'white':8}
+        for color, positions in self.__positions()['pion'].items():
+            for position in positions:
+                if position[1] == endline[color] and self.value[color]:
+                    piece = self.state()[color][position][0]
+                    del self.state()[color][position]
+                    maxi = 0
+                    for valeur, piece in self.value[color]:
+                        if valeur > maxi:
+                            maxi, best_piece = valeur, piece
+                        self.ate[color].remove((maxi, best_piece))
+                        self.ate[color].append((self.value[piece], piece))
+                        break
+
+                    self.etat[color][position] = [best_piece, [], []]
 
     def __positions(self):
         """
@@ -247,17 +270,19 @@ class Chess:
         """
 
         # Positions des rois et des autres pions
-        coord, king = {}, {}
+        coord, king, pions = {}, {}, {'black':[], 'white':[]}
         for team, positions in self.etat.items():
             coord[team] = {position for position in positions.keys()}
             for position, info in positions.items():
                 if info[0] == 'K':
                     king[team] = position
+                if info[0] == 'P':
+                    pions[team].append(position)
 
         # Cases libres/vides
         positions_restantes = {(x, y) for x in range(1, 9) for y in range(1, 9)} - (coord['black']|coord['white'])
 
-        return {'pions':coord, 'libres':positions_restantes, 'roi':king}
+        return {'pions':coord, 'libres':positions_restantes, 'roi':king, 'pion':pions}
 
     def __coup(self):
         """
@@ -417,10 +442,12 @@ def autogame(name1, name2, nb_coup=0):
             etat(game.state())
             # print(game.state())
             print(game)
+            print(game.ate)
             game.autoplay('black')
             etat(game.state())
             # print(game.state())
             print(game)
+            print(game.ate)
             count += 1
 
     else:

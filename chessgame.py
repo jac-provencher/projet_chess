@@ -7,7 +7,9 @@ class ChessError(Exception):
     """
 
 class Chess:
-
+    """
+    Classe gère une partie d'échecs
+    """
     def __init__(self, player1, player2):
         """
         Initialiser un nouvel état de partie
@@ -38,7 +40,7 @@ class Chess:
                     'white': {'P': '♟', 'C': '♞', 'F': '♝', 'Q': '♛', 'K': '♚', 'T': '♜'}
                     }
         self.oppo = {'black':'white', 'white':'black'}
-        self.value = {'K':0, 'P':1, 'F':2, 'T':3, 'C':4, 'Q':5}
+        self.value = {'K':0, 'P':1, 'F':3, 'T':5, 'C':3, 'Q':9}
         self.ate = {'black':[], 'white':[]}
 
     def __str__(self):
@@ -428,53 +430,82 @@ class Chess:
                         # Coups valides pour bouffer
                         self.etat[color][position][2] = coup_for_eat
 
-def etat(state, bouffe):
-    total, ate = set(), {'black':[], 'white':[]}
+class Optimize(Chess):
+    """
+    Classe qui permet à la méthode autoplay de jouer
+    le meilleur coup possible pour l'état de jeu
+    actuelle et subséquent
+    """
 
-    for color, pions in bouffe.items():
-        if pions:
-            for pion in pions:
-                ate[color].append(pion[1])
+    def __init__(self):
+        super().__init__()
 
-    for color, info in state.items():
-        print(f"{color}:")
-        for position, liste in info.items():
-            liste1 = ', '.join(map(str, (coord for coord in sorted(liste[1]))))
-            liste2 = ', '.join(map(str, (coord for coord in sorted(liste[2]))))
-            print(f"{liste[0]}:{position} ⇒  moves = {liste1 if liste[1] else 'cannot move'}, food = {liste2 if liste[2] else 'nothing to eat'}")
-            total.add(position)
+    def team_value(self, color):
+        """
+        Retourne la valeur de la couleur demandée.
+        Note: prend les valeurs prédéfinies dans self.value
+        :returns: int
+        """
+        count = 0
+        for info in self.etat[color].values():
+            count += self.value[info[0]]
+        return count
 
-    print(f"{len(total)} pions sur l'échiquier")
-    for color, pions in ate.items():
-        print(f"Pions bouffés pour team {color} (total = {len(pions)}): {', '.join(pions)} ")
+class Game(Chess):
+    """
+    Classe qui génère les informations sur l'état
+    de partie de manière plus clair
+    """
+    def __init__(self, player1, player2='Robot'):
+        super().__init__(player1, player2)
 
-def autogame(name1, name2, nb_coup=0):
-    game = Chess(name1, name2)
-    print(etat(game.state(), game.ate))
+    def etat_partie(self):
+
+        total, message = set(), 'All on board'
+        for color, info in self.state().items():
+            print(f"{color}:")
+            for position, liste in info.items():
+                liste1 = ', '.join(map(str, (coord for coord in sorted(liste[1]))))
+                liste2 = ', '.join(map(str, (coord for coord in sorted(liste[2]))))
+                print(f"{liste[0]}:{position} ⇒  moves = {liste1 if liste[1] else 'cannot move'}, food = {liste2 if liste[2] else 'nothing to eat'}")
+                total.add(position)
+
+        print(f"{len(total)} pions sur l'échiquier")
+
+        for color, pions in self.ate.items():
+            if pions:
+                print(f"Pions bouffés pour team {color} (total = {len(pions)}): {', '.join([pion[1] for pion in pions])} ")
+            else:
+                print(f"Pions bouffés pour team {color} (total = {len(pions)}) : {message}")
+
+
+def autogame(name1, name2='Robot', nb_coup=0):
+
+    game = Game(name1, name2)
+    print(game.etat_partie())
     print(game)
 
     if nb_coup >= 0:
         count = 0
         while count < nb_coup//2:
             game.autoplay('white')
-            etat(game.state(), game.ate)
+            game.etat_partie()
             print(game)
             game.autoplay('black')
-            etat(game.state(), game.ate)
+            game.etat_partie()
             print(game)
-
             count += 1
 
     else:
         while True:
             game.autoplay('white')
-            etat(game.state(), game.ate)
+            game.etat_partie()
             print(game)
             if game.isCheckmate('black'):
                 print(game.isCheckmate('black'))
                 break
             game.autoplay('black')
-            etat(game.state(), game.ate)
+            game.etat_partie()
             print(game)
             if game.isCheckmate('white'):
                 print(game.isCheckmate('white'))
@@ -509,5 +540,4 @@ def handgame(name1, name2='Robot'):
             print(game)
             print("Coup invalide, réessayer.")
 
-# handgame('Jacob')
-autogame('Jacob', 'Pascal', nb_coup=100)
+autogame('Jacob', nb_coup=50)

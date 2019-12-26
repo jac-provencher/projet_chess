@@ -131,6 +131,8 @@ class Chess:
             move = random.choice(pion[1])
             self.move(color, coord, move)
 
+        self.exchange_pion()
+
     def state(self):
         """
         Méthode permet de retourne l'état de partie actuelle
@@ -233,12 +235,11 @@ class Chess:
         # Déplacement et suppression des pions
         if self.etat[color][pos1][0] == 'P':
             self.move(color, pos1, pos2)
-            self.ate[self.oppo[color]].append((self.value['P'], 'P'))
+            # self.ate[self.oppo[color]].append((self.value['P'], 'P'))
             del self.etat[self.oppo[color]][pos2]
         else:
             piece = self.etat[self.oppo[color]][pos2][0]
-            if piece != 'P':
-                self.ate[self.oppo[color]].append((self.value[piece], piece))
+            self.ate[self.oppo[color]].append((self.value[piece], piece))
             del self.etat[self.oppo[color]][pos2]
             self.move(color, pos1, pos2)
 
@@ -250,7 +251,7 @@ class Chess:
         endline = {'black':1, 'white':8}
         for color, positions in self.__positions()['pion'].items():
             for position in positions:
-                if position[1] == endline[color] and self.value[color]:
+                if position[1] == endline[color] and self.ate[color]:
                     piece = self.state()[color][position][0]
                     del self.state()[color][position]
                     maxi = 0
@@ -495,4 +496,4 @@ def handgame(name1, name2='Robot'):
             print("Coup invalide, réessayer.")
 
 # handgame('Jacob')
-autogame('Jacob', 'Pascal', nb_coup=500)
+autogame('Jacob', 'Pascal', nb_coup=30)

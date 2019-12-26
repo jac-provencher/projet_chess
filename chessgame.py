@@ -154,8 +154,7 @@ class Chess:
         """
         player = {'black':self.player1, 'white':self.player2}
         king_pos = self.__positions()['roi'][color]
-        deplacement = self.state()[color][king_pos][1]
-        capture = self.state()[color][king_pos][2]
+        deplacement, capture = self.state()[color][king_pos][1], self.state()[color][king_pos][2]
 
         # Situation d'échec
         if not self.isCheck(color):
@@ -252,23 +251,24 @@ class Chess:
         endline = {'black':1, 'white':8}
 
         for color, positions in self.__positions()['pion'].items():
-            for position in positions:
-                # Si un pion est sur endline et que son équipe s'est fait bouffer des pions
-                if position[1] == endline[color] and self.ate[color]:
-                    piece = self.state()[color][position][0]
-                    del self.state()[color][position]
-                    # Recherche du meilleur pion par les bouffés
-                    maxi = 0
-                    for valeur, pion in self.ate[color]:
-                        if valeur > maxi:
-                            maxi, best_piece = valeur, pion
 
-                    # Ajout du pion échangé à la liste des bouffés
-                    self.ate[color][self.ate[color].index((maxi, best_piece))] = (self.value[piece], piece)
-                    # Ajout de la pièce échangé sur l'échiquier
-                    self.etat[color][position] = [best_piece, [], []]
-                else:
-                    break
+            # l'équipe 'color' s'est fait mangé au moins un pion
+            if self.ate[color]:
+                for position in positions:
+                    # Si un pion est sur endline
+                    if position[1] == endline[color]:
+                        piece = self.state()[color][position][0]
+                        del self.state()[color][position]
+                        # Recherche du meilleur pion par les bouffés
+                        maxi = 0
+                        for valeur, pion in self.ate[color]:
+                            if valeur > maxi:
+                                maxi, best_piece = valeur, pion
+
+                        # Ajout du pion échangé à la liste des bouffés
+                        self.ate[color][self.ate[color].index((maxi, best_piece))] = (self.value[piece], piece)
+                        # Ajout de la pièce échangé sur l'échiquier
+                        self.etat[color][position] = [best_piece, [], []]
 
     def __positions(self):
         """
@@ -408,8 +408,8 @@ class Chess:
 
                     # Positions longues portées
                     else:
-                        coup_for_eat = []
 
+                        coup_for_eat = []
                         for i, direction in enumerate(coup_valide[liste[0]]):
                             for n, coord in enumerate(direction):
                                 if coord not in pos_free:

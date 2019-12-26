@@ -44,11 +44,12 @@ class Chess:
     def __str__(self):
 
         # Construction de l'équiquier
-        d1 = [[' ' for _ in range(35)] for _ in range(15)]
+        d1 = [['━' if y % 2 != 0 else ' ' for x in range(35)] for y in range(15)]
         for i, ligne in enumerate(d1[::2]):
             ligne[0] = str(8 - i)
             for n in range(4, 35, 4):
                 ligne[n] = '.'
+
         d2 = []
         for ligne in d1:
             ligne[2] = ligne[34] = '┃'
@@ -61,7 +62,7 @@ class Chess:
                 d2[36*(16-2*y)+4*x] = self.pieces[color][info[0]]
 
         # Affiche de l'échiquier
-        title = "Chessgame"
+        title = "♔  Chessgame ♚"
         debut = ['   ', '━'*31, '\n']
         end = ['━━┃', '━'*31, '\n', '  ┃ ', '   '.join(str(n) for n in range(1, 9))]
 
@@ -117,6 +118,8 @@ class Chess:
         coord = random.choice(color_pos)
         pion = self.state()[color][coord]
 
+        self.exchange_pion()
+
         # Si possible de manger
         if pion[2]:
             best = 0
@@ -130,8 +133,6 @@ class Chess:
         elif pion[1]:
             move = random.choice(pion[1])
             self.move(color, coord, move)
-
-        self.exchange_pion()
 
     def state(self):
         """
@@ -235,7 +236,7 @@ class Chess:
         # Déplacement et suppression des pions
         if self.etat[color][pos1][0] == 'P':
             self.move(color, pos1, pos2)
-            # self.ate[self.oppo[color]].append((self.value['P'], 'P'))
+            self.ate[self.oppo[color]].append((self.value['P'], 'P'))
             del self.etat[self.oppo[color]][pos2]
         else:
             piece = self.etat[self.oppo[color]][pos2][0]
@@ -249,20 +250,25 @@ class Chess:
         le meilleur pion déjà manger
         """
         endline = {'black':1, 'white':8}
+
         for color, positions in self.__positions()['pion'].items():
             for position in positions:
+                # Si un pion est sur endline et que son équipe s'est fait bouffer des pions
                 if position[1] == endline[color] and self.ate[color]:
                     piece = self.state()[color][position][0]
                     del self.state()[color][position]
+                    # Recherche du meilleur pion par les bouffés
                     maxi = 0
-                    for valeur, piece in self.value[color]:
+                    for valeur, pion in self.ate[color]:
                         if valeur > maxi:
-                            maxi, best_piece = valeur, piece
-                        self.ate[color].remove((maxi, best_piece))
-                        self.ate[color].append((self.value[piece], piece))
-                        break
+                            maxi, best_piece = valeur, pion
 
+                    # Ajout du pion échangé à la liste des bouffés
+                    self.ate[color][self.ate[color].index((maxi, best_piece))] = (self.value[piece], piece)
+                    # Ajout de la pièce échangé sur l'échiquier
                     self.etat[color][position] = [best_piece, [], []]
+                else:
+                    break
 
     def __positions(self):
         """
@@ -422,45 +428,53 @@ class Chess:
                         # Coups valides pour bouffer
                         self.etat[color][position][2] = coup_for_eat
 
-def etat(state):
-    total = set()
+def etat(state, bouffe):
+    total, ate = set(), {'black':[], 'white':[]}
+
+    for color, pions in bouffe.items():
+        if pions:
+            for pion in pions:
+                ate[color].append(pion[1])
+
     for color, info in state.items():
         print(f"{color}:")
         for position, liste in info.items():
-            print(f"{liste[0]}:{position}  moves = {liste[1]}, to eat = {liste[2]}")
+            liste1 = ', '.join(map(str, (coord for coord in sorted(liste[1]))))
+            liste2 = ', '.join(map(str, (coord for coord in sorted(liste[2]))))
+            print(f"{liste[0]}:{position} ⇒  moves = {liste1 if liste[1] else 'cannot move'}, food = {liste2 if liste[2] else 'nothing to eat'}")
             total.add(position)
+
     print(f"{len(total)} pions sur l'échiquier")
+    for color, pions in ate.items():
+        print(f"Pions bouffés pour team {color} (total = {len(pions)}): {', '.join(pions)} ")
 
 def autogame(name1, name2, nb_coup=0):
     game = Chess(name1, name2)
-    etat(game.state())
+    print(etat(game.state(), game.ate))
     print(game)
 
-    if nb_coup > 0:
+    if nb_coup >= 0:
         count = 0
-        while count < nb_coup:
+        while count < nb_coup//2:
             game.autoplay('white')
-            etat(game.state())
-            # print(game.state())
+            etat(game.state(), game.ate)
             print(game)
-            print(game.ate)
             game.autoplay('black')
-            etat(game.state())
-            # print(game.state())
+            etat(game.state(), game.ate)
             print(game)
-            print(game.ate)
+
             count += 1
 
     else:
         while True:
             game.autoplay('white')
-            # etat(game.state())
+            etat(game.state(), game.ate)
             print(game)
             if game.isCheckmate('black'):
                 print(game.isCheckmate('black'))
                 break
             game.autoplay('black')
-            # etat(game.state())
+            etat(game.state(), game.ate)
             print(game)
             if game.isCheckmate('white'):
                 print(game.isCheckmate('white'))
@@ -496,4 +510,4 @@ def handgame(name1, name2='Robot'):
             print("Coup invalide, réessayer.")
 
 # handgame('Jacob')
-autogame('Jacob', 'Pascal', nb_coup=30)
+autogame('Jacob', 'Pascal', nb_coup=100)

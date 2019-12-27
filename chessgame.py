@@ -9,9 +9,9 @@ class ChessError(Exception):
 
 class Action:
     """
-    Classe qui permet à la méthode autoplay de jouer
-    le meilleur coup possible pour l'état de jeu
-    actuelle et subséquent
+    Classe qui donne accès aux informations nécessaires
+    aux bons fonctionnement d'une partie d'échecs:
+    positions, coups valides, etat de jeu et optimisations de bons coups.
     """
     def __init__(self):
 

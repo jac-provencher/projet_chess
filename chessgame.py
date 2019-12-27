@@ -7,7 +7,7 @@ class ChessError(Exception):
     """
 
 
-class Optimize:
+class Action:
     """
     Classe qui permet à la méthode autoplay de jouer
     le meilleur coup possible pour l'état de jeu
@@ -48,8 +48,9 @@ class Optimize:
 
     def positions(self):
         """
-        :returns: dico de la position des pions de chaque couleur
-        et les positions libres/vides
+        :returns: dico de la position des pions de chaque couleur,
+        les positions libres/vides, la position des rois et les positions
+        de pions 'pion' pour chaque couleur.
         """
 
         # Positions des rois et des autres pions
@@ -83,7 +84,7 @@ class Optimize:
                 for pos in info[2]:
                     eat[color].add(pos)
 
-        return {'deplacement':move, 'capture':eat}
+        return {'deplacement':move, 'all_capture':eat}
 
     def pions(self):
 
@@ -194,15 +195,37 @@ class Optimize:
             count += self.value[info[0]]
         return count
 
+    def try_kill(self):
+        """
+        Permet d'avoir le meilleur pion à capturer pour
+        chaque pion (si le pion peut manger)
+        :returns: dict {cle:valeur} = {pos1:[pion_value, pos2]}
+        """
+        dico_capture = {'black':{}, 'white':{}}
 
-class Chess(Optimize):
+        for color, dico in self.state().items():
+
+            # On va chercher les coup_capture de chaque pion
+            for pos1, coups in dico.items():
+                if coups[2]:
+                    dico_capture[color][pos1] = [coup for coup in coups[2]]
+
+            # On va chercher la valeur de pieces mangées
+            for pos1, attacks in dico_capture[color].items():
+                for i, attack in enumerate(attacks):
+                    piece = self.state()[self.oppo[color]][attack][0]
+                    dico_capture[color][pos1][i] = (self.value[piece], attack)
+
+        return dico_capture
+
+
+class Chess(Action):
     """
     Classe gère une partie d'échecs
     """
     def __init__(self, player1, player2):
         """
         Initialiser un nouvel état de partie
-        Accepte en argument le nom de deux joueurs en str
         :raise ChessError: si un des deux joueurs n'est pas une str
         """
 
@@ -276,8 +299,7 @@ class Chess(Optimize):
     def autoplay(self, color):
         """
         Méthode permettant de jouer un coup valide pour
-        l'état actuelle de jeu (pour le moment, ne jouer qu'un coup valide
-        pas nécessairement un bon coup)
+        l'état actuelle de jeu
         :raise ChessError: si la couleur est ni 'black' ni 'white'
         """
         # Traitement d'erreur
@@ -349,13 +371,13 @@ class Chess(Optimize):
         # Déplacement impossible
         elif deplacement:
             for coup in deplacement:
-                if coup not in self.coups()['capture'][self.oppo[color]]:
+                if coup not in self.coups()['all_capture'][self.oppo[color]]:
                     return False
 
         # Capture impossible
         elif capture:
             for attack in capture:
-                if attack not in self.coups()['capture'][self.oppo[color]]:
+                if attack not in self.coups()['all_capture'][self.oppo[color]]:
                     return False
 
         # Sacrifice impossible
@@ -383,7 +405,7 @@ class Chess(Optimize):
         :returns: booleen
         """
         echec = False
-        if self.positions()['roi'][color] in self.coups()['capture'][self.oppo[color]]:
+        if self.positions()['roi'][color] in self.coups()['all_capture'][self.oppo[color]]:
             echec = True
 
         return echec
@@ -478,10 +500,12 @@ class Game:
                 jeu.autoplay('white')
                 jeu.etat_partie()
                 print(jeu)
+                print(jeu.try_kill())
 
                 jeu.autoplay('black')
                 jeu.etat_partie()
                 print(jeu)
+                print(jeu.try_kill())
 
                 count += 1
 

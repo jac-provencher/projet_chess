@@ -6,21 +6,15 @@ class ChessError(Exception):
     Crée un nouveau type d'erreur, soit ChessError.
     """
 
-class Chess:
-    """
-    Classe gère une partie d'échecs
-    """
-    def __init__(self, player1, player2):
-        """
-        Initialiser un nouvel état de partie
-        Accepte en argument le nom de deux joueurs en str
-        :raise ChessError: si un des deux joueurs n'est pas une str
-        """
-        if not isinstance(player1, str) or not isinstance(player2, str):
-            raise ChessError("Les deux joueurs doivent être des chaines de caractères.")
 
-        self.player1 = player1
-        self.player2 = player2
+class Optimize:
+    """
+    Classe qui permet à la méthode autoplay de jouer
+    le meilleur coup possible pour l'état de jeu
+    actuelle et subséquent
+    """
+    def __init__(self):
+
         self.etat = {
                 'black': {
                     (1, 7): ['P', [], []], (2, 7): ['P', [], []], (3, 7): ['P', [], []], (4, 7): ['P', [], []],
@@ -35,13 +29,44 @@ class Chess:
                     (3, 1): ['F', [], []], (6, 1): ['F', [], []], (4, 1): ['K', [], []], (5, 1): ['Q', [], []]
                         }
                     }
+        self.value = {'K':0, 'P':1, 'F':3, 'C':3, 'T':5, 'Q':9}
+        self.ate = {'black':[], 'white':[]}
+
+    def team_value(self, color):
+        """
+        Retourne la valeur de la couleur demandée.
+        Note: prend les valeurs prédéfinies dans self.value
+        :returns: int
+        """
+        count = 0
+        for info in self.etat[color].values():
+            count += self.value[info[0]]
+        return count
+
+
+class Chess(Optimize):
+    """
+    Classe gère une partie d'échecs
+    """
+    def __init__(self, player1, player2):
+        """
+        Initialiser un nouvel état de partie
+        Accepte en argument le nom de deux joueurs en str
+        :raise ChessError: si un des deux joueurs n'est pas une str
+        """
+
+        if not isinstance(player1, str) or not isinstance(player2, str):
+            raise ChessError("Les deux joueurs doivent être des chaines de caractères.")
+
+        super().__init__()
+
+        self.player1 = player1
+        self.player2 = player2
         self.pieces = {
                     'black': {'P': '♙', 'C': '♘', 'F': '♗', 'Q': '♕', 'K': '♔', 'T': '♖'},
                     'white': {'P': '♟', 'C': '♞', 'F': '♝', 'Q': '♛', 'K': '♚', 'T': '♜'}
                     }
         self.oppo = {'black':'white', 'white':'black'}
-        self.value = {'K':0, 'P':1, 'F':3, 'T':5, 'C':3, 'Q':9}
-        self.ate = {'black':[], 'white':[]}
 
     def __str__(self):
 
@@ -120,7 +145,7 @@ class Chess:
         coord = random.choice(color_pos)
         pion = self.state()[color][coord]
 
-        self.exchange_pion()
+        self.__exchange_pion()
 
         # Si possible de manger
         if pion[2]:
@@ -144,6 +169,28 @@ class Chess:
         self.__pieces()
 
         return self.etat
+
+    def etat_partie(self):
+        """
+        Permet d'afficher l'état de partie de façon plus clair
+        """
+        total, message = set(), 'All on board'
+
+        for color, info in self.state().items():
+            print(f"{color}: value = {self.team_value(color)}")
+            for position, liste in info.items():
+                liste1 = ', '.join(map(str, (coord for coord in sorted(liste[1]))))
+                liste2 = ', '.join(map(str, (coord for coord in sorted(liste[2]))))
+                print(f"{liste[0]}:{position} ⇒  moves = {liste1 if liste[1] else 'cannot move'}, food = {liste2 if liste[2] else 'None'}")
+                total.add(position)
+
+        print(f"{len(total)} pions sur l'échiquier")
+
+        for color, pions in self.ate.items():
+            if pions:
+                print(f"Pions bouffés pour team {color} (total = {len(pions)}): {', '.join([pion[1] for pion in pions])} ")
+            else:
+                print(f"Pions bouffés pour team {color} (total = {len(pions)}) : {message}")
 
     def isCheckmate(self, color):
         """
@@ -235,17 +282,18 @@ class Chess:
             raise ChessError("Coup d'attaque invalide.")
 
         # Déplacement et suppression des pions
+        piece = self.etat[self.oppo[color]][pos2][0]
+
         if self.etat[color][pos1][0] == 'P':
             self.move(color, pos1, pos2)
-            self.ate[self.oppo[color]].append((self.value['P'], 'P'))
+            self.ate[self.oppo[color]].append((self.value[piece], piece))
             del self.etat[self.oppo[color]][pos2]
         else:
-            piece = self.etat[self.oppo[color]][pos2][0]
             self.ate[self.oppo[color]].append((self.value[piece], piece))
             del self.etat[self.oppo[color]][pos2]
             self.move(color, pos1, pos2)
 
-    def exchange_pion(self):
+    def __exchange_pion(self):
         """
         Méthode qui permet d'échanger le pion par
         le meilleur pion déjà manger
@@ -317,65 +365,44 @@ class Chess:
         pos_free = self.__positions()['libres']
         pos_pions = self.__positions()['pions']
 
+
         for color, positions in self.etat.items():
             for position, liste in positions.items():
                 x, y = position
 
                 if liste[0] == 'P':
 
-                    if color == 'black':
-                        # Pion noir est sur la ligne de départ
-                        if y == 7:
-                            coup_valide = [(x, y-i) for i in range(1, 3)]
-                            for i, coord in enumerate(coup_valide):
-                                if coord not in pos_free:
-                                    del coup_valide[i:]
-                                    break
-                            self.etat['black'][position][1] = coup_valide
+                    dico_pion = {
+                                    'black':[[(x, y-i) for i in range(1, 3)], (x, y-1), [(x+1, y-1), (x-1, y-1)]],
+                                    'white':[[(x, y+i) for i in range(1, 3)], (x, y+1), [(x-1, y+1), (x+1, y+1)]]
+                                }
 
-                        # Pion noir n'est pas sur la ligne de départ et peut avancer
-                        elif (x, y-1) in pos_free:
-                            self.etat['black'][position][1] = [(x, y-1)]
+                    # Pion est sur la ligne de départ
+                    if (color, y) == ('black', 7) or (color, y) == ('white', 2):
+                        for i, coord in enumerate(dico_pion[color][0]):
+                            if coord not in pos_free:
+                                del dico_pion[color][0][i:]
+                                break
+                        self.etat[color][position][1] = dico_pion[color][0]
 
-                        # Pion noir ne peut pas avancer
-                        else:
-                            self.etat['black'][position][1] = []
+                    # Pion n'est pas sur la ligne de départ et peut avancer
+                    elif dico_pion[color][1] in pos_free:
+                        self.etat[color][position][1] = [dico_pion[color][1]]
 
-                        # Positions que le pion noir peut aller pour bouffer
-                        coup_for_eat = []
-                        for pos in [(x+1, y-1), (x-1, y-1)]:
-                            if pos in pos_pions[self.oppo[color]]:
-                                coup_for_eat.append(pos)
-                        self.etat['black'][position][2] = coup_for_eat
+                    # Pion ne peut pas avancer
+                    else:
+                        self.etat[color][position][1] = []
 
-                    elif color == 'white':
-                        # Pion blanc est sur la ligne de départ
-                        if y == 2:
-                            coup_valide = [(x, y+i) for i in range(1, 3)]
-                            for i, coord in enumerate(coup_valide):
-                                if coord not in pos_free:
-                                    del coup_valide[i:]
-                                    break
-                            self.etat['white'][position][1] = coup_valide
-
-                        # Pion blanc n'est pas sur la ligne de départ et peut avancer
-                        elif (x, y+1) in pos_free:
-                            self.etat['white'][position][1] = [(x, y+1)]
-
-                        # Pion blanc ne peut pas avancer
-                        else:
-                            self.etat['white'][position][1] = []
-
-                        # Positions que le pion blanc peut aller pour bouffer
-                        coup_for_eat = []
-                        for pos in [(x-1, y+1), (x+1, y+1)]:
-                            if pos in pos_pions[self.oppo[color]]:
-                                coup_for_eat.append(pos)
-                        self.etat['white'][position][2] = coup_for_eat
+                    # Positions que le pion peut aller pour bouffer
+                    coup_for_eat = []
+                    for pos in dico_pion[color][2]:
+                        if pos in pos_pions[self.oppo[color]]:
+                            coup_for_eat.append(pos)
+                    self.etat[color][position][2] = coup_for_eat
 
                 else:
                     # Revoir pour simplifier les 'for i in range(1, 9)'
-                    coup_valide = {
+                    dico_piece = {
                                     'K':[
                                             (x, y+1), (x, y-1), (x+1, y), (x-1, y),
                                             (x+1, y+1), (x-1, y+1), (x+1, y-1), (x-1, y-1)
@@ -404,25 +431,25 @@ class Chess:
                     if liste[0] in ['K', 'C']:
 
                         # Coups valides de déplacement
-                        self.etat[color][position][1] = list(set(coup_valide[liste[0]]) & pos_free)
+                        self.etat[color][position][1] = list(set(dico_piece[liste[0]]) & pos_free)
                         # Coups valides pour bouffer
-                        self.etat[color][position][2] = list(set(coup_valide[liste[0]]) & pos_pions[self.oppo[color]])
+                        self.etat[color][position][2] = list(set(dico_piece[liste[0]]) & pos_pions[self.oppo[color]])
 
                     # Positions longues portées
                     else:
 
                         coup_for_eat = []
-                        for i, direction in enumerate(coup_valide[liste[0]]):
+                        for i, direction in enumerate(dico_piece[liste[0]]):
                             for n, coord in enumerate(direction):
                                 if coord not in pos_free:
-                                    del coup_valide[liste[0]][i][n:]
+                                    del dico_piece[liste[0]][i][n:]
                                     x, y = coord
                                     if coord in pos_pions[self.oppo[color]]:
                                         coup_for_eat.append(coord)
                                     break
 
                         moves = []
-                        for direction in coup_valide[liste[0]]:
+                        for direction in dico_piece[liste[0]]:
                             moves += direction
 
                         # Coups valides pour déplacement
@@ -430,114 +457,77 @@ class Chess:
                         # Coups valides pour bouffer
                         self.etat[color][position][2] = coup_for_eat
 
-class Optimize(Chess):
+class Game:
     """
-    Classe qui permet à la méthode autoplay de jouer
-    le meilleur coup possible pour l'état de jeu
-    actuelle et subséquent
-    """
-
-    def __init__(self):
-        super().__init__()
-
-    def team_value(self, color):
-        """
-        Retourne la valeur de la couleur demandée.
-        Note: prend les valeurs prédéfinies dans self.value
-        :returns: int
-        """
-        count = 0
-        for info in self.etat[color].values():
-            count += self.value[info[0]]
-        return count
-
-class Game(Chess):
-    """
-    Classe qui génère les informations sur l'état
-    de partie de manière plus clair
+    Classe qui run les games pour Chess
     """
     def __init__(self, player1, player2='Robot'):
-        super().__init__(player1, player2)
 
-    def etat_partie(self):
+        self.player1 = player1
+        self.player2 = player2
 
-        total, message = set(), 'All on board'
-        for color, info in self.state().items():
-            print(f"{color}:")
-            for position, liste in info.items():
-                liste1 = ', '.join(map(str, (coord for coord in sorted(liste[1]))))
-                liste2 = ', '.join(map(str, (coord for coord in sorted(liste[2]))))
-                print(f"{liste[0]}:{position} ⇒  moves = {liste1 if liste[1] else 'cannot move'}, food = {liste2 if liste[2] else 'nothing to eat'}")
-                total.add(position)
+    def autogame(self, nb_coup=0):
 
-        print(f"{len(total)} pions sur l'échiquier")
+        jeu = Chess(self.player1, self.player2)
+        print(jeu.etat_partie())
+        print(jeu)
 
-        for color, pions in self.ate.items():
-            if pions:
-                print(f"Pions bouffés pour team {color} (total = {len(pions)}): {', '.join([pion[1] for pion in pions])} ")
-            else:
-                print(f"Pions bouffés pour team {color} (total = {len(pions)}) : {message}")
+        if nb_coup >= 0:
+            count = 0
+            while count < nb_coup:
+                jeu.autoplay('white')
+                jeu.etat_partie()
+                print(jeu)
 
+                jeu.autoplay('black')
+                jeu.etat_partie()
+                print(jeu)
 
-def autogame(name1, name2='Robot', nb_coup=0):
+                count += 1
 
-    game = Game(name1, name2)
-    print(game.etat_partie())
-    print(game)
+        else:
+            while True:
+                jeu.autoplay('white')
+                jeu.etat_partie()
+                print(jeu)
+                if jeu.isCheckmate('black'):
+                    print(jeu.isCheckmate('black'))
+                    break
+                jeu.autoplay('black')
+                jeu.etat_partie()
+                print(jeu)
+                if jeu.isCheckmate('white'):
+                    print(jeu.isCheckmate('white'))
+                    break
 
-    if nb_coup >= 0:
-        count = 0
-        while count < nb_coup//2:
-            game.autoplay('white')
-            game.etat_partie()
-            print(game)
-            game.autoplay('black')
-            game.etat_partie()
-            print(game)
-            count += 1
+    def handgame(self):
 
-    else:
+        jeu = Chess(self.player1, self.player2)
+        print(jeu)
+
         while True:
-            game.autoplay('white')
-            game.etat_partie()
-            print(game)
-            if game.isCheckmate('black'):
-                print(game.isCheckmate('black'))
-                break
-            game.autoplay('black')
-            game.etat_partie()
-            print(game)
-            if game.isCheckmate('white'):
-                print(game.isCheckmate('white'))
-                break
+            action = input("Type de coup (m, e): ")
+            pos1 = input("Position du pion xy: ")
+            pos2 = input("Position de déplacement xy: ")
+            try:
+                if action == 'm':
+                    jeu.move('white', (int(pos1[0]), int(pos1[1])), (int(pos2[0]), int(pos2[1])))
+                elif action == 'e':
+                    jeu.eat('white', (int(pos1[0]), int(pos1[1])), (int(pos2[0]), int(pos2[1])))
+                if jeu.isCheckmate('black'):
+                    print(jeu.isCheckmate('black'))
+                print(jeu)
 
-def handgame(name1, name2='Robot'):
-    game = Chess(name1, name2)
-    print(game)
-    # while not game.isCheckmate():
-    while True:
-        action = input("Type de coup (m, e): ")
-        pos1 = input("Position du pion xy: ")
-        pos2 = input("Position de déplacement xy: ")
-        try:
-            if action == 'm':
-                game.move('white', (int(pos1[0]), int(pos1[1])), (int(pos2[0]), int(pos2[1])))
-            elif action == 'e':
-                game.eat('white', (int(pos1[0]), int(pos1[1])), (int(pos2[0]), int(pos2[1])))
-            if game.isCheckmate('black'):
-                print(game.isCheckmate('black'))
-            print(game)
+                jeu.autoplay('black')
+                print(jeu)
+                if jeu.isCheckmate('white'):
+                    print(jeu.isCheckmate('white'))
 
-            game.autoplay('black')
-            print(game)
-            if game.isCheckmate('white'):
-                print(game.isCheckmate('white'))
+            except ChessError as err:
+                print(err)
+                print(jeu)
+            except Exception:
+                print(jeu)
+                print("Coup invalide, réessayer.")
 
-        except ChessError as err:
-            print(err)
-            print(game)
-        except Exception:
-            print(game)
-            print("Coup invalide, réessayer.")
-
-autogame('Jacob', nb_coup=50)
+Game('joueur1').autogame(nb_coup=100)

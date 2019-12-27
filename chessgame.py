@@ -185,10 +185,7 @@ class Action:
         Note: prend les valeurs prédéfinies dans self.value
         :returns: int
         """
-        count = 0
-        for info in self.etat[color].values():
-            count += self.value[info[0]]
-        return count
+        return sum(self.value[info[0]] for info in self.etat[color].values())
 
     def try_kill(self):
         """

@@ -92,7 +92,6 @@ class Action:
         pos_free = self.positions()['libres']
         pos_pions = self.positions()['pions']
 
-
         for color, positions in self.etat.items():
             for position, liste in positions.items():
                 x, y = position
@@ -175,12 +174,8 @@ class Action:
                                         coup_for_eat.append(coord)
                                     break
 
-                        moves = []
-                        for direction in dico_piece[liste[0]]:
-                            moves += direction
-
                         # Coups valides pour déplacement
-                        self.etat[color][position][1] = moves
+                        self.etat[color][position][1] = [move for direction in dico_piece[liste[0]] for move in direction]
                         # Coups valides pour bouffer
                         self.etat[color][position][2] = coup_for_eat
 

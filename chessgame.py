@@ -188,7 +188,7 @@ class Gamestate:
         Autrement,
         :returns: False
         """
-        player = {'black':self.player1, 'white':self.player2}
+        player = {'black':'joueur noir', 'white':'joueur blanc'}
         king_pos = self.positions()['roi'][color]
         deplacement, capture = self.state()[color][king_pos][1], self.state()[color][king_pos][2]
 
@@ -287,7 +287,7 @@ class Optimize(Gamestate):
         """
         Permet d'avoir le meilleur pion à capturer pour
         chaque pion (si le pion peut manger)
-        :returns: dict {cle:valeur} = {pos1:[pion_value, pos2]}
+        :returns: dict {cle:valeur} = {pos1:[(pion_value, pos2)]}
         """
         dico_capture = {'black':{}, 'white':{}}
 
@@ -398,24 +398,30 @@ class Chess(Optimize):
             raise ChessError("La partie est terminée.")
 
         color_pos = [position for position, info in self.state()[color].items() if info[1] or info[2]]
-        coord = random.choice(color_pos)
-        pion = self.state()[color][coord]
+        coord1 = random.choice(color_pos)
+        pion = self.state()[color][coord1]
 
         self.exchange_pion()
 
         # Si possible de manger
         if pion[2]:
             best = 0
+            coord2 = False
             for pos in pion[2]:
-                if self.value[self.state()[self.oppo[color]][pos][0]] > best and self.state()[self.oppo[color]][pos][0] != 'K':
+                if self.state()[self.oppo[color]][pos][0] == 'K':
+                    continue
+                elif self.value[self.state()[self.oppo[color]][pos][0]] > best:
                     best = self.value[self.state()[self.oppo[color]][pos][0]]
-                    best_pos = pos
-            self.eat(color, coord, best_pos)
+                    coord2 = pos
+                else:
+                    break
+            if coord2:
+                self.eat(color, coord1, coord2)
 
         # Autrement, se déplacer
         elif pion[1]:
             move = random.choice(pion[1])
-            self.move(color, coord, move)
+            self.move(color, coord1, move)
 
     def formatted_state(self):
         """
@@ -497,18 +503,22 @@ class Game:
         print(jeu.formatted_state())
         print(jeu)
 
-        if nb_coup >= 0:
+        if nb_coup > 0:
             count = 0
             while count < nb_coup:
                 jeu.autoplay('white')
                 jeu.formatted_state()
                 print(jeu)
-                print(jeu.try_kill())
+                if jeu.isCheckmate('black'):
+                    print(jeu.isCheckmate('black'))
+                    break
 
                 jeu.autoplay('black')
                 jeu.formatted_state()
                 print(jeu)
-                print(jeu.try_kill())
+                if jeu.isCheckmate('white'):
+                    print(jeu.isCheckmate('white'))
+                    break
 
                 count += 1
 
@@ -520,6 +530,7 @@ class Game:
                 if jeu.isCheckmate('black'):
                     print(jeu.isCheckmate('black'))
                     break
+
                 jeu.autoplay('black')
                 jeu.formatted_state()
                 print(jeu)
@@ -557,4 +568,4 @@ class Game:
                 print(jeu)
                 print("Coup invalide, réessayer.")
 
-Game('joueur1').autogame(nb_coup=100)
+Game('joueur1').autogame()

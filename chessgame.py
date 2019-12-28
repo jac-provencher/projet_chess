@@ -7,11 +7,11 @@ class ChessError(Exception):
     """
 
 
-class Action:
+class Gamestate:
     """
     Classe qui donne accès aux informations nécessaires
     aux bons fonctionnement d'une partie d'échecs:
-    positions, coups valides, etat de jeu et optimisations de bons coups.
+    positions, coups valides et etat de jeu
     """
     def __init__(self):
 
@@ -42,7 +42,7 @@ class Action:
         Méthode permet de retourne l'état de partie actuelle
         :returns: l'état de partie (qui sera utilisé pour __str__, donc sans les coups valides)
         """
-        self.pions()
+        self.valid_generator()
 
         return self.etat
 
@@ -86,7 +86,7 @@ class Action:
 
         return {'deplacement':move, 'all_capture':eat}
 
-    def pions(self):
+    def valid_generator(self):
 
         # Mise à jour des coups valides
         pos_free = self.positions()['libres']
@@ -179,6 +179,102 @@ class Action:
                         # Coups valides pour bouffer
                         self.etat[color][position][2] = coup_for_eat
 
+    def isCheckmate(self, color):
+        """
+        Méthode vérifiant si le roi adverse est en position
+        d'échec et mat
+        Si True,
+        :returns: le nom du gagnant
+        Autrement,
+        :returns: False
+        """
+        player = {'black':self.player1, 'white':self.player2}
+        king_pos = self.positions()['roi'][color]
+        deplacement, capture = self.state()[color][king_pos][1], self.state()[color][king_pos][2]
+
+        # Situation d'échec
+        if not self.isCheck(color):
+            return False
+
+        # Déplacement impossible
+        elif deplacement:
+            for coup in deplacement:
+                if coup not in self.coups()['all_capture'][self.oppo[color]]:
+                    return False
+
+        # Capture impossible
+        elif capture:
+            for attack in capture:
+                if attack not in self.coups()['all_capture'][self.oppo[color]]:
+                    return False
+
+        # Sacrifice impossible
+        sacrifice = {}
+        for color, dico in self.state().items():
+            sacrifice[color] = {position:[info[0], info[1]] for position, info in dico.items() if info[1]}
+
+        for pos, info in sacrifice[color].items():
+            del self.etat[color][pos]
+
+            # Essaie pour chaque déplacement et vérif si le roi est en échec
+            for move in info[1]:
+                self.etat[color][move] = [info[0], [], []]
+                if not self.isCheck(color):
+                    return False
+                del self.etat[color][move]
+
+            self.etat[color][pos] = [info[0], [], []]
+
+        return f"Le gagnant est {player[self.oppo[color]]}!"
+
+    def isCheck(self, color):
+        """
+        Vérifie si le roi adverse est en position d'échec
+        :returns: booleen
+        """
+        echec = False
+        if self.positions()['roi'][color] in self.coups()['all_capture'][self.oppo[color]]:
+            echec = True
+
+        return echec
+
+    def exchange_pion(self):
+        """
+        Méthode qui permet d'échanger le pion par
+        le meilleur pion déjà manger
+        """
+        endline = {'black':1, 'white':8}
+
+        for color, positions in self.positions()['pion'].items():
+
+            # l'équipe 'color' s'est fait mangé au moins un pion
+            if self.ate[color]:
+                for position in positions:
+                    # Si un pion est sur endline
+                    if position[1] == endline[color]:
+                        piece = self.state()[color][position][0]
+                        del self.state()[color][position]
+                        # Recherche du meilleur pion par les bouffés
+                        maxi = 0
+                        for valeur, pion in self.ate[color]:
+                            if valeur > maxi:
+                                maxi, best_piece = valeur, pion
+
+                        # Ajout du pion échangé à la liste des bouffés
+                        self.ate[color][self.ate[color].index((maxi, best_piece))] = (self.value[piece], piece)
+                        # Ajout de la pièce échangé sur l'échiquier
+                        self.etat[color][position] = [best_piece, [], []]
+
+
+class Optimize(Gamestate):
+    """
+    Classe qui permet de faire l'optimisation du meilleur coup
+    en fonction de l'état de jeu courant
+    """
+
+    def __init__(self):
+        super().__init__()
+
     def team_value(self, color):
         """
         Retourne la valeur de la couleur demandée.
@@ -211,7 +307,7 @@ class Action:
         return dico_capture
 
 
-class Chess(Action):
+class Chess(Optimize):
     """
     Classe gère une partie d'échecs
     """
@@ -305,7 +401,7 @@ class Chess(Action):
         coord = random.choice(color_pos)
         pion = self.state()[color][coord]
 
-        self.__exchange_pion()
+        self.exchange_pion()
 
         # Si possible de manger
         if pion[2]:
@@ -321,7 +417,7 @@ class Chess(Action):
             move = random.choice(pion[1])
             self.move(color, coord, move)
 
-    def etat_partie(self):
+    def formatted_state(self):
         """
         Permet d'afficher l'état de partie de façon plus clair
         """
@@ -342,65 +438,6 @@ class Chess(Action):
                 print(f"Pions bouffés pour team {color} (total = {len(pions)}): {', '.join([pion[1] for pion in pions])} ")
             else:
                 print(f"Pions bouffés pour team {color} (total = {len(pions)}) : {message}")
-
-    def isCheckmate(self, color):
-        """
-        Méthode vérifiant si le roi adverse est en position
-        d'échec et mat
-        Si True,
-        :returns: le nom du gagnant
-        Autrement,
-        :returns: False
-        """
-        player = {'black':self.player1, 'white':self.player2}
-        king_pos = self.positions()['roi'][color]
-        deplacement, capture = self.state()[color][king_pos][1], self.state()[color][king_pos][2]
-
-        # Situation d'échec
-        if not self.isCheck(color):
-            return False
-
-        # Déplacement impossible
-        elif deplacement:
-            for coup in deplacement:
-                if coup not in self.coups()['all_capture'][self.oppo[color]]:
-                    return False
-
-        # Capture impossible
-        elif capture:
-            for attack in capture:
-                if attack not in self.coups()['all_capture'][self.oppo[color]]:
-                    return False
-
-        # Sacrifice impossible
-        sacrifice = {}
-        for color, dico in self.state().items():
-            sacrifice[color] = {position:[info[0], info[1]] for position, info in dico.items() if info[1]}
-
-        for pos, info in sacrifice[color].items():
-            del self.etat[color][pos]
-
-            # Essaie pour chaque déplacement et vérif si le roi est en échec
-            for move in info[1]:
-                self.etat[color][move] = [info[0], [], []]
-                if not self.isCheck(color):
-                    return False
-                del self.etat[color][move]
-
-            self.etat[color][pos] = [info[0], [], []]
-
-        return f"Le gagnant est {player[self.oppo[color]]}!"
-
-    def isCheck(self, color):
-        """
-        Vérifie si le roi adverse est en position d'échec
-        :returns: booleen
-        """
-        echec = False
-        if self.positions()['roi'][color] in self.coups()['all_capture'][self.oppo[color]]:
-            echec = True
-
-        return echec
 
     def eat(self, color, pos1, pos2):
         """
@@ -444,32 +481,6 @@ class Chess(Action):
             del self.etat[self.oppo[color]][pos2]
             self.move(color, pos1, pos2)
 
-    def __exchange_pion(self):
-        """
-        Méthode qui permet d'échanger le pion par
-        le meilleur pion déjà manger
-        """
-        endline = {'black':1, 'white':8}
-
-        for color, positions in self.positions()['pion'].items():
-
-            # l'équipe 'color' s'est fait mangé au moins un pion
-            if self.ate[color]:
-                for position in positions:
-                    # Si un pion est sur endline
-                    if position[1] == endline[color]:
-                        piece = self.state()[color][position][0]
-                        del self.state()[color][position]
-                        # Recherche du meilleur pion par les bouffés
-                        maxi = 0
-                        for valeur, pion in self.ate[color]:
-                            if valeur > maxi:
-                                maxi, best_piece = valeur, pion
-
-                        # Ajout du pion échangé à la liste des bouffés
-                        self.ate[color][self.ate[color].index((maxi, best_piece))] = (self.value[piece], piece)
-                        # Ajout de la pièce échangé sur l'échiquier
-                        self.etat[color][position] = [best_piece, [], []]
 
 class Game:
     """
@@ -483,19 +494,19 @@ class Game:
     def autogame(self, nb_coup=0):
 
         jeu = Chess(self.player1, self.player2)
-        print(jeu.etat_partie())
+        print(jeu.formatted_state())
         print(jeu)
 
         if nb_coup >= 0:
             count = 0
             while count < nb_coup:
                 jeu.autoplay('white')
-                jeu.etat_partie()
+                jeu.formatted_state()
                 print(jeu)
                 print(jeu.try_kill())
 
                 jeu.autoplay('black')
-                jeu.etat_partie()
+                jeu.formatted_state()
                 print(jeu)
                 print(jeu.try_kill())
 
@@ -504,13 +515,13 @@ class Game:
         else:
             while True:
                 jeu.autoplay('white')
-                jeu.etat_partie()
+                jeu.formatted_state()
                 print(jeu)
                 if jeu.isCheckmate('black'):
                     print(jeu.isCheckmate('black'))
                     break
                 jeu.autoplay('black')
-                jeu.etat_partie()
+                jeu.formatted_state()
                 print(jeu)
                 if jeu.isCheckmate('white'):
                     print(jeu.isCheckmate('white'))

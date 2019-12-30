@@ -283,28 +283,21 @@ class Optimize(Gamestate):
 
     def try_kill(self, etat):
         """
-        Permet d'avoir le meilleur pion à capturer pour
+        Permet d'avoir les pions à capturer pour
         chaque pion (si le pion peut manger)
         :returns: dict {cle:valeur} = {pos1:[(pion_value, pos2)]}
         """
         captures = {'black':{}, 'white':{}}
 
         for color, dico in etat.items():
-
-            # On va chercher les coup_for_eat de chaque pion
-            for pos1, coups in dico.items():
-                if coups[2]:
-                    captures[color][pos1] = [coup for coup in coups[2]]
-
-            # On va chercher les meilleurs pieces à manger
-            for pos1, attacks in captures[color].items():
-                for i, attack in enumerate(attacks):
-                    piece = etat[self.oppo[color]][attack][0]
-                    safe = attack not in self.coups(self.valid_generator(self.future_state(color, pos1, attack)))['all_capture'][self.oppo[color]]
-                    if safe:
-                        captures[color][pos1][i] = (self.value[piece], attack)
-                    else:
-                        del captures[color][pos1][i]
+            for pos1, attacks in dico.items():
+                if attacks[2]:
+                    captures[color][pos1] = []
+                    for attack in attacks[2]:
+                        piece = etat[self.oppo[color]][attack][0]
+                        safe = attack not in self.coups(self.valid_generator(self.future_state(etat, color, pos1, attack)))['all_capture'][self.oppo[color]]
+                        if safe:
+                            captures[color][pos1] += [(self.value[piece], attack)]
 
         return captures
 
@@ -312,14 +305,14 @@ class Optimize(Gamestate):
         """
         Méthode qui permet de savoir les
         meilleurs déplacements pour chaque pion de chaque couleur
-        :returns: {color:[(piece, (pos1, pos2)), (piece, (pos1, pos2)), ...]}
+        :returns: {color:{(piece, pos1, pos2), (piece, pos1, pos2), ...}}
         """
         moves = {}
         for color, dico in etat.items():
-            moves[color] = []
+            moves[color] = set()
             for pos1, info in dico.items():
                 for pos2 in info[1]:
-                    etat_futur = self.valid_generator(self.future_state(color, pos1, pos2))
+                    etat_futur = self.valid_generator(self.future_state(etat, color, pos1, pos2))
                     for attack in etat_futur[color][pos2][2]:
 
                         # Condition pour avoir un bon coup
@@ -327,29 +320,29 @@ class Optimize(Gamestate):
                         more_kills = len(etat_futur[color][pos2][2]) > len(etat[color][pos1][2])
                         check = self.isCheck(self.oppo[color], etat_futur)
 
-                        # Si on est safe et qu'on augmente le nb de cible ou qu'on met le roi en échec
+                        # Si on est safe et qu'on augmente le nb de cible ou qu'on met le roi adverse en échec
                         if safe and (more_kills or check):
-                            moves[color].append((info[0], (pos1, pos2)))
+                            moves[color].add((info[0], (pos1, pos2)))
 
         return moves
 
-    def future_state(self, color, pos1, pos2):
+    def future_state(self, etat_now, color, pos1, pos2):
         """
         Méthode qui permet de déplacer conditionnellement
         des pions afin de pouvoir évaluer différentes situations
         :returns: un etat de partie modifié
         """
-        gamestate = copy.deepcopy(self.etat)
-        piece = gamestate[color][pos1][0]
+        etat_after = copy.deepcopy(etat_now)
+        piece = etat_after[color][pos1][0]
 
         # un pion se trouve à 'pos2' et en est un adverse
-        if gamestate[self.oppo[color]].get(pos2):
-            del gamestate[self.oppo[color]][pos2]
+        if etat_after[self.oppo[color]].get(pos2):
+            del etat_after[self.oppo[color]][pos2]
 
-        del gamestate[color][pos1]
-        gamestate[color][pos2] = [piece, [], []]
+        del etat_after[color][pos1]
+        etat_after[color][pos2] = [piece, [], []]
 
-        return gamestate
+        return etat_after
 
 class Chess(Optimize):
     """
@@ -443,31 +436,40 @@ class Chess(Optimize):
 
         self.exchange_pion(self.etat_partie())
 
-        color_pos = [position for position, info in self.state()[color].items() if info[1] or info[2]]
-        coord1 = random.choice(color_pos)
-        pion = self.state()[color][coord1]
+        # Si c'est possible de capturer
+        if any(self.try_kill(self.state())[color].values()):
 
-        # Si possible de manger
-        if pion[2]:
-            best = 0
-            coord2 = False
-            for pos in pion[2]:
-                if self.state()[self.oppo[color]][pos][0] == 'K':
-                    continue
-                elif self.value[self.state()[self.oppo[color]][pos][0]] > best:
-                    best = self.value[self.state()[self.oppo[color]][pos][0]]
-                    coord2 = pos
-                else:
-                    break
-            if coord2:
-                self.eat(color, coord1, coord2)
+            for pos1, attack in self.try_kill(self.state())[color].items():
+                if attack:
+                    if max(attack)[0] == 0:
+                        continue
+                    else:
+                        self.eat(color, pos1, max(attack)[1])
+                        break
 
-        # Autrement, se déplacer
-        elif pion[1]:
-            move = random.choice(pion[1])
-            self.move(color, coord1, move)
+        # Sinon si, bouger pour menacer le plus de pions possible
+        elif any(self.try_move(self.state())[color]):
 
-    def formatted_state(self):
+            coord = random.choice(list(self.try_move(self.state())[color]))[1]
+            maxi = 0
+
+            for piece, positions in self.try_move(self.state())[color]:
+                etat_futur = self.valid_generator(self.future_state(self.state(), color, positions[0], positions[1]))
+                if len(self.try_kill(etat_futur)[color][positions[1]]) > maxi:
+                    maxi = len(self.try_kill(etat_futur)[color][positions[1]])
+                    coord = (positions[0], positions[1])
+
+            self.move(color, coord[0], coord[1])
+
+        # Autrement, bouger aléatoirement
+        else:
+            color_pos = [position for position, info in self.state()[color].items() if info[1]]
+            coord1 = random.choice(color_pos)
+            coord2 = random.choice(self.state()[color][coord1][1])
+
+            self.move(color, coord1, coord2)
+
+    def formatted_state(self, valides=False):
         """
         Permet d'afficher l'état de partie de façon plus clair
         """
@@ -476,9 +478,10 @@ class Chess(Optimize):
         for color, info in self.state().items():
             print(f"{color}: value = {self.team_value(color)}")
             for position, liste in info.items():
-                liste1 = ', '.join(map(str, (coord for coord in sorted(liste[1]))))
-                liste2 = ', '.join(map(str, (coord for coord in sorted(liste[2]))))
-                print(f"{liste[0]}:{position} ⇒  moves = {liste1 if liste[1] else 'cannot move'}, food = {liste2 if liste[2] else 'None'}")
+                if valides:
+                    liste1 = ', '.join(map(str, (coord for coord in sorted(liste[1]))))
+                    liste2 = ', '.join(map(str, (coord for coord in sorted(liste[2]))))
+                    print(f"{liste[0]}:{position} ⇒  moves = {liste1 if liste[1] else 'cannot move'}, food = {liste2 if liste[2] else 'None'}")
                 total.add(position)
 
         print(f"{len(total)} pions sur l'échiquier")
@@ -550,19 +553,15 @@ class Game:
             count = 0
             while count < n:
                 jeu.autoplay('white')
-                jeu.formatted_state()
+                jeu.formatted_state(valides=False)
                 print(jeu)
-                print(jeu.try_kill(jeu.state()))
-                print(jeu.try_move(jeu.state()))
                 if jeu.isCheckmate('black'):
                     print(jeu.isCheckmate('black'))
                     break
 
                 jeu.autoplay('black')
-                jeu.formatted_state()
+                jeu.formatted_state(valides=False)
                 print(jeu)
-                print(jeu.try_kill(jeu.state()))
-                print(jeu.try_move(jeu.state()))
                 if jeu.isCheckmate('white'):
                     print(jeu.isCheckmate('white'))
                     break

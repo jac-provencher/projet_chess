@@ -1,6 +1,8 @@
 import random
 import copy
 
+codes = {}
+
 class ChessError(Exception):
     """
     Crée un nouveau type d'erreur, soit ChessError.
@@ -16,88 +18,18 @@ class Gamestate:
 
         self.etat = {
                 'black': {
-                    (1, 7): ['P', [], []], (2, 7): ['P', [], []], (3, 7): ['P', [], []], (4, 7): ['P', [], []],
-                    (5, 7): ['P', [], []], (6, 7): ['P', [], []], (7, 7): ['P', [], []], (8, 7): ['P', [], []],
-                    (1, 8): ['T', [], []], (8, 8): ['T', [], []], (2, 8): ['C', [], []], (7, 8): ['C', [], []],
-                    (3, 8): ['F', [], []], (6, 8): ['F', [], []], (5, 8): ['K', [], []], (4, 8): ['Q', [], []]
+                    (1, 7): ['P'], (2, 7): ['P'], (3, 7): ['P'], (4, 7): ['P'],
+                    (5, 7): ['P'], (6, 7): ['P'], (7, 7): ['P'], (8, 7): ['P'],
+                    (1, 8): ['T'], (8, 8): ['T'], (2, 8): ['C'], (7, 8): ['C'],
+                    (3, 8): ['F'], (6, 8): ['F'], (5, 8): ['K'], (4, 8): ['Q']
                         },
                 'white': {
-                    (1, 2): ['P', [], []], (2, 2): ['P', [], []], (3, 2): ['P', [], []], (4, 2): ['P', [], []],
-                    (5, 2): ['P', [], []], (6, 2): ['P', [], []], (7, 2): ['P', [], []], (8, 2): ['P', [], []],
-                    (1, 1): ['T', [], []], (8, 1): ['T', [], []], (2, 1): ['C', [], []], (7, 1): ['C', [], []],
-                    (3, 1): ['F', [], []], (6, 1): ['F', [], []], (4, 1): ['K', [], []], (5, 1): ['Q', [], []]
+                    (1, 2): ['P'], (2, 2): ['P'], (3, 2): ['P'], (4, 2): ['P'],
+                    (5, 2): ['P'], (6, 2): ['P'], (7, 2): ['P'], (8, 2): ['P'],
+                    (1, 1): ['T'], (8, 1): ['T'], (2, 1): ['C'], (7, 1): ['C'],
+                    (3, 1): ['F'], (6, 1): ['F'], (4, 1): ['K'], (5, 1): ['Q']
                         }
                     }
-        self.roi = [
-                        [-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-                        [-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-                        [-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-                        [-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-                        [-2.0, -3.0, -3.0, -4.0, -4.0, -3.0, -3.0, -2.0],
-                        [-1.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -1.0],
-                        [2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 2.0],
-                        [2.0, 3.0, 1.0, 0.0, 0.0, 1.0, 3.0, 2.0]
-                    ]
-        self.tour = [
-                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                        [0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5],
-                        [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-                        [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-                        [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-                        [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-                        [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-                        [0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0]
-                    ]
-        self.fou = [
-                        [-2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0],
-                        [-1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, -1.0],
-                        [-1.0, 0.0, 0.5, 1.0, 1.0, 0.5, 0.0, -1.0],
-                        [-1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, -1.0],
-                        [-1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, -1.0],
-                        [-1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0],
-                        [-1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, -1.0],
-                        [-2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0]
-                    ]
-        self.reine = [
-                        [-2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0],
-                        [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0],
-                        [-1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.0, -1.0],
-                        [-0.5, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0, -0.5],
-                        [0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0, -0.5],
-                        [-1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.0, -1.0],
-                        [-1.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, -1.0],
-                        [-2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0]
-                    ]
-        self.cheval = [
-                        [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0],
-                        [-4.0, -2.0, 0.0, 0.0, 0.0, 0.0, -2.0, -4.0],
-                        [-3.0, 0.0, 1.0, 1.5, 1.5, 1.0, 0.0, -3.0],
-                        [-3.0, 0.5, 1.5, 2.0, 2.0, 1.5, 0.5, -3.0],
-                        [-3.0, 0.0, 1.5, 2.0, 2.0, 1.5, 0.0, -3.0],
-                        [-3.0, 0.5, 1.0, 1.5, 1.5, 1.0, 0.5, -3.0],
-                        [-4.0, -2.0, 0.0, 0.5, 0.5, 0.0, -2.0, -4.0],
-                        [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0]
-                    ]
-        self.pion = [
-                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                        [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
-                        [1.0, 1.0, 2.0, 3.0, 3.0, 2.0, 1.0, 1.0],
-                        [0.5, 0.5, 1.0, 2.5, 2.5, 1.0, 0.5, 0.5],
-                        [0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 0.0, 0.0],
-                        [0.5, -0.5, -1.0, 0.0, 0.0, -1.0, -0.5, 0.5],
-                        [0.5, 1.0, 1.0, -2.0, -2.0, 1.0, 1.0, 0.5],
-                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-                    ]
-
-        self.pieces = ['K', 'Q', 'T', 'F', 'C', 'P']
-        self.white_values = [self.roi, self.reine, self.tour, self.fou, self.cheval, self.pion]
-        self.black_values = []
-        for value in self.white_values:
-            self.black_values.append(list(reversed(value)))
-        self.board_values = {
-                                'black':{piece:value for piece, value in list(zip(self.pieces, self.black_values))},
-                                'white':{piece:value for piece, value in list(zip(self.pieces, self.white_values))}
-                            }
         self.value = {'K':1000, 'P':10, 'F':30, 'C':30, 'T':50, 'Q':90}
         self.ate = {'black':[], 'white':[]}
         self.unicode = {
@@ -166,6 +98,7 @@ class Gamestate:
 
         for color, positions in etat.items():
             for position, liste in positions.items():
+                etat[color][position] = [etat[color][position][0], [], []]
                 x, y = position
 
                 if liste[0] == 'P':
@@ -356,157 +289,107 @@ class Optimize(Gamestate):
     def __init__(self):
 
         super().__init__()
+        self.memo = {}
 
-    def team_value(self, color):
-        """
-        Retourne la valeur de la couleur demandée.
-        Note: prend les valeurs prédéfinies dans self.value
-        :returns: int
-        """
-        return sum(self.value[info[0]] for info in self.etat[color].values())
-
-    def try_kill(self, etat):
-        """
-        Permet d'avoir les pions à capturer pour
-        chaque pion (si le pion peut manger)
-        :returns: dict {cle:valeur} = {pos1:[(pion_value, pos2)]}
-        """
-        captures = {'black':{}, 'white':{}}
-
-        for color, dico in etat.items():
-            for pos1, attacks in dico.items():
-                if attacks[2]:
-                    captures[color][pos1] = []
-                    for attack in attacks[2]:
-                        piece = etat[self.oppo[color]][attack][0]
-                        coups_futurs = self.coups(self.valid_generator(self.future_state(etat, color, pos1, attack)))
-                        if attack not in coups_futurs['all_capture'][self.oppo[color]]:
-                            captures[color][pos1] += [(self.value[piece], attack)]
-
-        return captures
-
-    def try_move(self, etat):
-        """
-        Méthode qui permet de savoir les
-        meilleurs déplacements pour chaque pion de chaque couleur
-        :returns: {color:{(piece, pos1, pos2), (piece, pos1, pos2), ...}}
-        """
-        moves = {}
-        for color, dico in etat.items():
-            moves[color] = set()
-            for pos1, info in dico.items():
-                for pos2 in info[1]:
-                    etat_futur = self.valid_generator(self.future_state(etat, color, pos1, pos2))
-                    for attack in etat_futur[color][pos2][2]:
-
-                        # Condition pour avoir un bon coup
-                        safe = attack not in self.coups(etat_futur)['all_capture'][self.oppo[color]]
-                        more_kills = len(etat_futur[color][pos2][2]) > len(etat[color][pos1][2])
-                        check = self.isCheck(self.oppo[color], etat_futur)
-
-                        # Si on est safe et qu'on augmente le nb de cible ou qu'on met le roi adverse en échec
-                        if safe and (more_kills or check):
-                            moves[color].add((info[0], (pos1, pos2)))
-
-        return moves
-
-    def attackers(self, color, etat):
-        """
-        Méthode qui retourne la position des attackers
-        contre le roi 'color'
-        :returns: dico {pos1:value}
-        """
-        attaquants = {}
-        pos_king = self.positions(etat)['roi'][color]
-        deplacement_king = etat[color][pos_king][1]
-
-        for pos1, info in etat[self.oppo[color]].items():
-            if pos_king in info[2] or set(deplacement_king) & set(info[1]):
-                attaquants[pos1] = self.value[info[0]]
-
-        return attaquants
-
-    def position_value(self, etat):
+    def material_value(self, etat):
         """
         Méthode qui permet de générer la valeur de
         chaque position pour chaque type de pion
-        :returns: dict = {color:{pos1:value}}
+        :returns: dict = {color:{left:list, valeur:int}}
         """
-        result = {}
-        for color, dico in etat.items():
-            result[color] = {}
-            for pos1, info in dico.items():
-                x, y = pos1
-                piece = info[0]
-                result[color][pos1] = self.value[piece] + self.board_values[color][piece][8-y][x-1]
+        dico = {}
+        for color, info in etat.items():
+            value = sum(self.value[info[0]] for info in etat[color].values())
+            dico[color] = {'left':len(info), 'valeur':value}
 
-        return result
+        return dico
 
-    def evalf(self, etat):
+    def evalf(self, etat, color):
         """
         Méthode qui permet d'évaluer la valeur
         d'un etat de jeu 'etat'
-        :returns: la valeur des deux équipes = {color:value}
+        :returns: float
         """
-        values = {}
-        for color in etat:
-            values[color] = 0
+        eval = 0
 
-            # Positional value
-            for value in self.position_value(etat)[color].values():
-                values[color] += value
+        # Material value
+        eval += sum(value for value in self.material_value(etat)[color].values())
 
-            # Mobility
-            # King safety
-            # Center control
-            # Pawn structure
+        # Mobility
+        # King safety
+        # Center control
+        # Pawn structure
 
-        return values
+        return eval
 
-    def master(self, depth, etat, color):
+    def minimax(self, depth, alpha, beta, etat, color, MaximizePlayer):
         """
-        Méthode maitresse de Optimize :
-        permet de déterminer le meilleur coup
-        du joueur 'color' pour l'état actuelle
-        :returns: tuple (int, pos1, pos2)
+        Méthode faisant l'optimisation du meilleur
+        coup possible pour les pions 'color'
+        :returns: (int, (pos1, pos2))
         """
-        if depth == 0:
-            return self.evalf(etat)[color], None
+        if depth == 0 or self.isCheckmate(color, etat):
+            return self.evalf(etat, color), None
 
-        maxi = -999999
-        move = None
-        for pos1, info in etat[color].items():
-            for pos2 in info[1]+info[2]:
-                etat_futur = self.valid_generator(self.future_state(etat, color, pos1, pos2))
-                value, _ = self.minimize(depth-1, etat_futur, self.oppo[color])
+        elif MaximizePlayer:
+            maxEval, maxPawn = -1000000, -1000000
+            coord, coord2 = None, None
 
-                if value > maxi:
-                    move = (pos1, pos2)
-                    maxi = value
+            for pos1, info in etat[color].items():
 
-        return maxi, move
+                if info[1]+info[2]:
+                    for pos2 in info[1]+info[2]:
+                        etat_futur = self.valid_generator(self.future_state(etat, color, pos1, pos2))
+                        code = self.code_generator(etat_futur)
 
-    def minimize(self, depth, etat, color):
-        """
-        Bras droit de la méthode maximize
-        """
-        if depth == 0:
-            return self.evalf(etat)[color], None
+                        # Memoization
+                        if code not in codes:
+                            codes[code] = etat_futur
+                            self.memo[code] = self.minimax(depth-1, alpha, beta, etat_futur, self.oppo[color], False)
 
-        mini = 999999
-        move = None
-        for pos1, info in etat[color].items():
-            for pos2 in info[1]+info[2]:
-                etat_futur = self.valid_generator(self.future_state(etat, color, pos1, pos2))
-                value, _ = self.master(depth-1, etat_futur, self.oppo[color])
+                        # Recherche du maximum et élagage alpha-beta
+                        reply = self.memo[code]
+                        alpha = max(alpha, reply[0])
+                        if beta <= alpha:
+                            continue
+                        if reply[0] > maxPawn:
+                            maxPawn, coord2 = reply[0], pos2
 
-                if -value < mini:
-                    move = (pos1, pos2)
-                    mini = -value
+                if maxPawn > maxEval:
+                    maxEval, coord = maxPawn, (pos1, coord2)
 
-        return mini, move
+            return maxEval, coord
 
-    def analyze_structure(self, etat):
+        else:
+            minEval, minPawn = 1000000, 1000000
+            coord, coord2 = None, None
+
+            for pos1, info in etat[color].items():
+
+                if info[1]+info[2]:
+                    for pos2 in info[1]+info[2]:
+                        etat_futur = self.valid_generator(self.future_state(etat, color, pos1, pos2))
+                        code = self.code_generator(etat_futur)
+
+                        # Memoization
+                        if code not in codes:
+                            codes[code] = etat_futur
+                            self.memo[code] = self.minimax(depth-1, alpha, beta, etat_futur, self.oppo[color], True)
+
+                        # Recherche du minimum et élagage alpha-beta
+                        reply = self.memo[code]
+                        beta = min(beta, reply[0])
+                        if beta <= alpha:
+                            continue
+                        if -reply[0] < minPawn:
+                            minPawn, coord2 = reply[0], pos2
+
+                if -minPawn < minEval:
+                    minEval, coord = -minPawn, (pos1, coord2)
+
+            return minEval, coord
+
+    def pawn_structure(self, etat):
         """
         Analyse la structure des pions sur l'échiquier
         Modifie les valeurs des positions si nécessaires
@@ -535,6 +418,22 @@ class Optimize(Gamestate):
         Méthode qui évalue le controle central d'une équipe
         On se base sur les paramètres suivants:
         ...
+        """
+        pass
+
+    def code_generator(self, etat):
+        """
+        Méthode qui génère un code spécifique à un état
+        """
+        code = list(color[0].upper()+str(pos1)+info[0] for color, dico in etat.items() for pos1, info in dico.items())
+        code.sort()
+
+        return tuple(code)
+
+    def constants(self):
+        """
+        Méthode qui permet de déterminer la valeur des
+        constantes C pour la méthode evalf.
         """
         pass
 
@@ -630,25 +529,31 @@ class Chess(Optimize):
 
         self.exchange_pion(self.etat_partie())
 
-        move = self.master(2, self.state(), color)
-        if move[1][1] in self.positions(self.state())['all_pions'][self.oppo[color]]:
-            self.eat(color, move[1][0], move[1][1])
+        alpha, beta = -1000000, 1000000
+        move = self.minimax(3, alpha, beta, self.state(), color, True)[1]
+        print(move)
+        if move[1] in self.positions(self.state())['all_pions'][self.oppo[color]]:
+            self.eat(color, move[0], move[1])
         else:
-            self.move(color, move[1][0], move[1][1])
+            self.move(color, move[0], move[1])
 
-    def formatted_state(self, valides=False):
+    def formatted_state(self, demand=False):
         """
         Permet d'afficher l'état de partie de façon plus clair
         """
         total, message = set(), 'All on board'
 
+        print('='*100)
+
         for color, info in self.state().items():
-            print(f"{color}: value = {self.evalf(self.state())[color]}")
+            print(f"{color}: value = {self.evalf(self.state(), color)}")
             for position, liste in info.items():
-                if valides:
+                if demand:
                     liste1 = ', '.join(map(str, (coord for coord in sorted(liste[1]))))
                     liste2 = ', '.join(map(str, (coord for coord in sorted(liste[2]))))
                     print(f"{liste[0]}:{position} ⇒  moves = {liste1 if liste[1] else 'cannot move'}, food = {liste2 if liste[2] else 'None'}")
+                    for code in codes:
+                        print(f"{code}: {self.memo[code]}")
                 total.add(position)
 
         print(f"{len(total)} pions sur l'échiquier")
@@ -658,6 +563,8 @@ class Chess(Optimize):
                 print(f"Pions bouffés pour team {color} (total = {len(pions)}): {', '.join([pion[1] for pion in pions])} ")
             else:
                 print(f"Pions bouffés pour team {color} (total = {len(pions)}) : {message}")
+
+        print('='*100)
 
     def eat(self, color, pos1, pos2):
         """
@@ -721,11 +628,11 @@ class Game:
             while count < n:
                 try:
                     jeu.autoplay('white')
-                    jeu.formatted_state(valides=False)
+                    jeu.formatted_state(demand=False)
                     print(jeu)
 
                     jeu.autoplay('black')
-                    jeu.formatted_state(valides=False)
+                    jeu.formatted_state(demand=False)
                     print(jeu)
 
                 except ChessError as err:
@@ -738,11 +645,11 @@ class Game:
             while True:
                 try:
                     jeu.autoplay('white')
-                    jeu.formatted_state(valides=False)
+                    jeu.formatted_state(demand=False)
                     print(jeu)
 
                     jeu.autoplay('black')
-                    jeu.formatted_state(valides=False)
+                    jeu.formatted_state(demand=False)
                     print(jeu)
 
                 except ChessError as err:
@@ -766,12 +673,16 @@ class Game:
                     jeu.eat('white', (int(pos1[0]), int(pos1[1])), (int(pos2[0]), int(pos2[1])))
                 if jeu.isCheckmate('black', jeu.state()):
                     print(jeu.isCheckmate('black', jeu.state()))
+                    break
+                jeu.formatted_state(demand=False)
                 print(jeu)
 
                 jeu.autoplay('black')
+                jeu.formatted_state(demand=False)
                 print(jeu)
                 if jeu.isCheckmate('white', jeu.state()):
                     print(jeu.isCheckmate('white', jeu.state()))
+                    break
 
             except ChessError as err:
                 print(err)
@@ -780,5 +691,5 @@ class Game:
                 print(jeu)
                 print("Coup invalide, réessayer.")
 
-Game('joueur1').autogame(n=20)
-# Game('joueur1').handgame()
+# Game('joueur1').autogame(n=20)
+Game('joueur1').handgame()

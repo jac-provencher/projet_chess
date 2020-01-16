@@ -530,7 +530,7 @@ class Chess(Optimize):
         self.exchange_pion(self.etat_partie())
 
         alpha, beta = -1000000, 1000000
-        move = self.minimax(3, alpha, beta, self.state(), color, True)[1]
+        move = self.minimax(1, alpha, beta, self.state(), color, True)[1]
         print(move)
         if move[1] in self.positions(self.state())['all_pions'][self.oppo[color]]:
             self.eat(color, move[0], move[1])
@@ -552,8 +552,6 @@ class Chess(Optimize):
                     liste1 = ', '.join(map(str, (coord for coord in sorted(liste[1]))))
                     liste2 = ', '.join(map(str, (coord for coord in sorted(liste[2]))))
                     print(f"{liste[0]}:{position} ⇒  moves = {liste1 if liste[1] else 'cannot move'}, food = {liste2 if liste[2] else 'None'}")
-                    for code in codes:
-                        print(f"{code}: {self.memo[code]}")
                 total.add(position)
 
         print(f"{len(total)} pions sur l'échiquier")
@@ -628,11 +626,13 @@ class Game:
             while count < n:
                 try:
                     jeu.autoplay('white')
-                    jeu.formatted_state(demand=False)
+                    print(jeu.state())
+                    # jeu.formatted_state(demand=True)
                     print(jeu)
 
                     jeu.autoplay('black')
-                    jeu.formatted_state(demand=False)
+                    print(jeu.state())
+                    # jeu.formatted_state(demand=True)
                     print(jeu)
 
                 except ChessError as err:
@@ -691,5 +691,5 @@ class Game:
                 print(jeu)
                 print("Coup invalide, réessayer.")
 
-# Game('joueur1').autogame(n=20)
-Game('joueur1').handgame()
+Game('joueur1').autogame(n=1)
+# Game('joueur1').handgame()

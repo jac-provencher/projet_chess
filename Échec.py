@@ -1,5 +1,6 @@
 import random
 import turtle
+import e20 as e
 
 def tracerpolygone(ronnie, poly):
     "À l'aide de la tortue ronnie, tracer un polygone "
@@ -1284,7 +1285,7 @@ class echecX(echec):
             self.pb.color('white')
             self.pb.speed(0)
             self.pb.goto(-9*n + 2*n*(pd[0]), -9*n + 2*n*(pb[1]))
-class echecXX(echec):
+class echecXX(e.echec):
     def __init__(self, état=None):
         super().__init__(état)
         joe = turtle.Turtle(visible=None)

@@ -1,6 +1,7 @@
 import turtle
 import Échec as e
 import copy
+import e20
 class echecclic(e.echecXX):
     def __init__(self, état=None):
         super().__init__(état)
@@ -138,7 +139,7 @@ class echecclic(e.echecXX):
                 try:
                     self.etatpass()
                     self.jouer_coupB(self.pio, self.cou)
-                except e.EchecError as err:
+                except e20.EchecError as err:
                     self.marc.write(err,align='center', font=('arial', 20, 'normal'))
                     self.pio = None
                     self.cou = None
@@ -154,7 +155,7 @@ class echecclic(e.echecXX):
                                 self.marc.write('Échec et mat!',align='center', font=('arial', 20, 'normal'))
                             else:
                                 self.marc.write('Échec!',align='center', font=('arial', 20, 'normal'))
-                    except e.EchecError as err:
+                    except e20.EchecError as err:
                         self.marc.write(err,align='center', font=('arial', 20, 'normal'))
                         
                         
@@ -166,8 +167,10 @@ class echecclic(e.echecXX):
         self.etpass = copy.deepcopy(self.etat)
     
     def jouer(self):
-            self.fen.onscreenclick(btn=1, fun=self.pion)
-            self.fen.mainloop()
+        self.stratW3()
+        self.afficher()
+        self.fen.onscreenclick(btn=1, fun=self.pion)
+        self.fen.mainloop()
     
     def terminerpartie(self):
         raise SystemExit

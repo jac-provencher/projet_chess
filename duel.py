@@ -1,7 +1,12 @@
 import Échec
-import chessgame
+import e20
 a = Échec.echec()
 while True:
-    a.stratW3()
+
+    a.stratB3()
     print(a)
-    b = chessgame.
+    b = e20.echec(a.état())
+    b.stratW3()
+    print(b)
+    a = Échec.echec(b.état())
+       

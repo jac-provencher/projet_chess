@@ -33,7 +33,6 @@ class echec:
                             except EchecError:
                                 continue
         if liste != []:
-            print(listeval)
             potentiel = []
             valeur = max(listeval)
             for i, j in enumerate(listeval):
@@ -54,9 +53,9 @@ class echec:
             if kind == 'P':
                 if pos[1] <= 3:
                     val += 0.1
-                val += 1
+                val += 2
             elif kind == 'T' or kind == 'C' or kind == 'F':
-                val += 3
+                val += 4
                 if kind == 'T':
                     val += 4
             elif kind == 'Q':
@@ -73,7 +72,7 @@ class echec:
                 if kind == 'T':
                     val -= 4
             elif kind == 'Q':
-                val -= 10
+                val -= 9
             elif kind == 'K':
                 val -= 100
         if self.check_echecB():
@@ -187,14 +186,14 @@ class echec:
                                 it = self.etat['black'].get(pf)
                                 if it is not None:
                                     self.jouer_coupW((x, y), pf)
-                                    listeval += [self.valjeu() - vali - self.valcpB2()]
+                                    listeval += [self.valjeu() - vali-self.valcpB2()]
                                     self.etat['white'].pop(pf)
                                     self.etat['white'][(x, y)] = im
                                     self.etat['black'][pf] = it
                                 else:
                                     self.jouer_coupW((x, y), pf)
                                     if self.check_echecB():
-                                        listeval += [0.5-self.valcpB2()]
+                                        listeval += [0.5]
                                     else:
                                         listeval+=[0]
                                     self.etat['white'].pop(pf)
@@ -224,8 +223,8 @@ class echec:
                                     self.etat['black'][(x, y)] = im
                                     self.etat['white'][pf] = it
                                 else:
-                                    self.jouer_coupW((x, y), pf)
-                                    if self.check_echecW:
+                                    self.jouer_coupB((x, y), pf)
+                                    if self.check_echecW():
                                         listeval +=[0.5-self.valcpW()]
                                     else:
                                         listeval += [0]
@@ -256,15 +255,13 @@ class echec:
                                     self.etat['black'][(x, y)] = im
                                     self.etat['white'][pf] = it
                                 else:
-                                    self.jouer_coupW((x, y), pf)
+                                    self.jouer_coupB((x, y), pf)
                                     if self.check_echecW():
                                         listeval+=[0.5]
                                     else:
                                         listeval += [0]
                                     self.etat['black'].pop(pf)
-                                    self.etat['black'][(x, y)] = im
-                                    
-                                    
+                                    self.etat['black'][(x, y)] = im 
                             except EchecError:
                                 continue
         if listeval != []:
@@ -535,8 +532,8 @@ class echec:
     
     def check_echecW(self):
         for h, k in self.etat['white'].items():
-                        if k == 'K':
-                            pf = h
+            if k == 'K':
+                pf = h
         for i in range(1, 9):
             for j in range(1, 9):
                 try:

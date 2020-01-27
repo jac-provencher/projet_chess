@@ -3,6 +3,7 @@ import copy
 class EchecError(Exception):
     pass
 class echec:
+            
     def stratW3(self):
         liste = []
         listeval = []
@@ -202,7 +203,7 @@ class echec:
                                 continue
         if listeval != []:
             return max(listeval)
-        return -600 if self.check_echecW() else 0  
+        return -600 if self.check_echecW() else -20  
     
     def valcpB3(self):
         listeval = []
@@ -234,7 +235,7 @@ class echec:
                                 continue
         if listeval != []:
             return max(listeval)
-        return -1000 if self.check_echecB() else 0
+        return -1000 if self.check_echecB() else 20
     
     def valcpB2(self):
         listeval = []
@@ -266,7 +267,7 @@ class echec:
                                 continue
         if listeval != []:
             return max(listeval)
-        return -400 if self.check_echecB() else 0
+        return -400 if self.check_echecB() else 20
     
     def valcpB(self):
         listeval = []
@@ -612,6 +613,7 @@ class echec:
         else:
             self.etat = état
         self.etpass = copy.deepcopy(self.etat)
+        self.n = 0
     
     def etatpass(self):
         self.etpass = copy.deepcopy(self.etat)

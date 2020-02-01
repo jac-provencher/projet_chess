@@ -163,15 +163,19 @@ class echec:
                                     self.etat['white'][(x, y)] = im
                                     self.etat['black'][pf] = it
                                 else:
+                                    if self.check_echecB():
+                                        listeval += [0.5]
+                                    else:
+                                        listeval+=[0]
                                     self.jouer_coupW((x, y), pf)
                                     self.etat['white'].pop(pf)
                                     self.etat['white'][(x, y)] = im
-                                    listeval+=[0]
+                                    
                             except EchecError:
                                 continue
         if listeval != []:
             return max(listeval)
-        return -1000 if self.check_echecW() else 0
+        return -1000 if self.check_echecW() else -2
     
     def valcpW(self):
         listeval = []

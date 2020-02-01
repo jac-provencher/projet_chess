@@ -13,6 +13,45 @@ def tracerpolygone(ronnie, poly):
         ronnie.goto(pos)
    
 class echec:
+    def stratB4(self):
+        liste = []
+        listeval = []
+        vali = self.valjeu()
+        for x in range(1, 9):
+            for y in range(1, 9):
+                im = self.etat['black'].get((x, y))
+                if im is not None:
+                    for i in range(1, 9):
+                        for j in range(1, 9):
+                            try:
+                                pf = (i, j)
+                                it = self.etat['white'].get(pf)
+                                self.jouer_coupB((x, y), pf)
+                                listeval += [vali - self.valjeu()-self.valcpW()]
+                                liste += [[(x, y), pf]]
+                                if it is None:
+                                    self.etat['black'].pop(pf)
+                                    self.etat['black'][(x, y)] = im
+                                else:
+                                    self.etat['black'].pop(pf)
+                                    self.etat['black'][(x, y)] = im
+                                    self.etat['white'][pf] = it
+                            except EchecError:
+                                continue
+        if liste != []:
+            potentiel = []
+            valeur = max(listeval)
+            for i, j in enumerate(listeval):
+                if j == valeur:
+                    potentiel += [liste[i]]
+            random.shuffle(potentiel)
+            coup = potentiel[0]
+            self.jouer_coupB(coup[0], coup[1])
+        else:
+            if not self.check_echecB():
+                raise EchecError('égalité')
+            raise EchecError('Échec et mat! (Blancs gagnent)')
+    
     def stratW3(self):
         liste = []
         listeval = []
@@ -202,14 +241,18 @@ class echec:
                                     self.etat['black'][pf] = it
                                 else:
                                     self.jouer_coupW((x, y), pf)
+                                    if self.check_echecB():
+                                        listeval+=[0.5 - self.valcpB2()]
+                                    else:
+                                        listeval += [0]
                                     self.etat['white'].pop(pf)
                                     self.etat['white'][(x, y)] = im
-                                    listeval+=[0]
+                                    
                             except EchecError:
                                 continue
         if listeval != []:
             return max(listeval)
-        return -1000 if self.check_echecW() else 0  
+        return -1000 if self.check_echecW() else 1  
     
     def valcpB3(self):
         listeval = []
@@ -260,16 +303,20 @@ class echec:
                                     self.etat['black'][(x, y)] = im
                                     self.etat['white'][pf] = it
                                 else:
-                                    self.jouer_coupW((x, y), pf)
+                                    self.jouer_coupB((x, y), pf)
+                                    if self.check_echecW():
+                                        listeval += [0.5]
+                                    else:
+                                        listeval += [0]
                                     self.etat['black'].pop(pf)
                                     self.etat['black'][(x, y)] = im
-                                    listeval += [0]
+                                    
                                     
                             except EchecError:
                                 continue
         if listeval != []:
             return max(listeval)
-        return -1000 if self.check_echecB() else 0
+        return -1000 if self.check_echecB() else -1
     
     def valcpB(self):
         listeval = []

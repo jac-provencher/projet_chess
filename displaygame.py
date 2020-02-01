@@ -62,6 +62,12 @@ class display(e20.echec):
         # Importation de sons
         self.moveSound = pygame.mixer.Sound("moveSound.wav")
         self.buttonSound = pygame.mixer.Sound("switchSound.wav")
+        self.gagnant = pygame.mixer.Sound("gagnant.wav")
+        self.perdant = pygame.mixer.Sound("perdant.wav")
+        self.mauvaisc = pygame.mixer.Sound("pourri.wav")
+        self.echeccc = pygame.mixer.Sound("echec_1_.wav")
+        
+        
 
     def redrawScreen(self, screen):
         """
@@ -121,6 +127,10 @@ while running:
             partie.isClicked('showMove', event.pos)
             partie.boardClickPosition.append(mouseClick)
             try:
+                partie.checkmatB()
+            except:
+                partie.perdant.play()
+            try:
                 pos1, pos2 = partie.getLastPositions(partie.boardClickPosition)
                 partie.jouer_coupB(pos1, pos2)
                 partie.moveSound.play()
@@ -130,13 +140,26 @@ while running:
             else:
                 turn = 'white'
             if turn == 'white':
-                partie.redrawScreen(partie.screen)
-                partie.stratW3()
-                partie.moveSound.play()
-                turn = 'black'
+                try:
+                    partie.redrawScreen(partie.screen)
+                    l1 = len(partie.état()['black'])
+                    partie.stratW3()
+                    partie.moveSound.play()
+                    if l1>len(partie.état()['black']):
+                        partie.mauvaisc.play()
+                    
+                    elif partie.check_echecB():
+                        partie.echeccc.play()
+                    turn = 'black'
+                except e20.EchecError:
+                    partie.gagnant.play()
+
+                
+                
 
     partie.cursorPosition = partie.windowToBoard(pygame.mouse.get_pos())
 
     partie.redrawScreen(partie.screen)
+
 
 pygame.quit()

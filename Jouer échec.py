@@ -138,8 +138,8 @@ class echecclic(e.echecXX):
                 p = 0
                 try:
                     self.etatpass()
-                    self.jouer_coupB(self.pio, self.cou)
-                except e20.EchecError as err:
+                    self.jouer_coupW(self.pio, self.cou)
+                except e.EchecError as err:
                     self.marc.write(err,align='center', font=('arial', 20, 'normal'))
                     self.pio = None
                     self.cou = None
@@ -147,7 +147,7 @@ class echecclic(e.echecXX):
                 if p != 1:
                     try:
                         self.afficher()
-                        self.stratW3()
+                        self.stratB4()
                         self.afficher()
                         self.checkmatW()
                         if self.check_echecB() is True:
@@ -155,7 +155,7 @@ class echecclic(e.echecXX):
                                 self.marc.write('Échec et mat!',align='center', font=('arial', 20, 'normal'))
                             else:
                                 self.marc.write('Échec!',align='center', font=('arial', 20, 'normal'))
-                    except e20.EchecError as err:
+                    except e.EchecError as err:
                         self.marc.write(err,align='center', font=('arial', 20, 'normal'))
                         
                         
@@ -167,7 +167,6 @@ class echecclic(e.echecXX):
         self.etpass = copy.deepcopy(self.etat)
     
     def jouer(self):
-        self.stratW3()
         self.afficher()
         self.fen.onscreenclick(btn=1, fun=self.pion)
         self.fen.mainloop()

@@ -1,6 +1,7 @@
 import random
 import turtle
 import e20 as e
+import copy
 
 def tracerpolygone(ronnie, poly):
     "À l'aide de la tortue ronnie, tracer un polygone "
@@ -13,10 +14,45 @@ def tracerpolygone(ronnie, poly):
         ronnie.goto(pos)
    
 class echec:
+    def stratB5(self):
+        if len(self.etat['black']) <= 15:
+            self.stratB4()
+        else:
+            self.stratB3()
+
+    def valjeu2(self):
+        val = 0
+        for pos, kind in self.etat['white'].items():
+            if kind == 'P':
+                val +=  (8-pos[1])*1
+                val += 10
+            elif kind == 'C':
+                val += 30
+            elif kind == 'F':
+                val += 40
+            elif kind == 'T':
+                val += 70
+            elif kind == 'Q':
+                val += 100
+        for pos, kind in self.etat['black'].items():
+            val -= 1*pos[1]
+            if kind == 'P':
+                val -= pos[1]*1
+                val -= 10
+            elif kind == 'C':
+                val -= 30
+            elif kind == 'F':
+                val -= 40
+            elif kind == 'T':
+                val -= 70
+            elif kind == 'Q':
+                val -= 100
+        return val
+    
     def stratB4(self):
         liste = []
         listeval = []
-        vali = self.valjeu()
+        vali = self.valjeu2()
         for x in range(1, 9):
             for y in range(1, 9):
                 im = self.etat['black'].get((x, y))
@@ -27,12 +63,13 @@ class echec:
                                 pf = (i, j)
                                 it = self.etat['white'].get(pf)
                                 self.jouer_coupB((x, y), pf)
-                                listeval += [vali - self.valjeu()-self.valcpW()]
                                 liste += [[(x, y), pf]]
                                 if it is None:
+                                    listeval += [-self.valcpW()]
                                     self.etat['black'].pop(pf)
                                     self.etat['black'][(x, y)] = im
                                 else:
+                                    listeval += [vali - self.valjeu2()-self.valcpW()]
                                     self.etat['black'].pop(pf)
                                     self.etat['black'][(x, y)] = im
                                     self.etat['white'][pf] = it
@@ -192,7 +229,7 @@ class echec:
     
     def valcpW2(self):
         listeval = []
-        vali = self.valjeu()
+        vali = self.valjeu2()
         for x in range(1, 9):
             for y in range(1, 9):
                 im = self.etat['white'].get((x, y))
@@ -204,7 +241,7 @@ class echec:
                                 it = self.etat['black'].get(pf)
                                 if it is not None:
                                     self.jouer_coupW((x, y), pf)
-                                    vp = self.valjeu() - vali
+                                    vp = self.valjeu2() - vali - self.valcpB3()
                                     listeval += [vp]
                                     self.etat['white'].pop(pf)
                                     self.etat['white'][(x, y)] = im
@@ -218,11 +255,11 @@ class echec:
                                 continue
         if listeval != []:
             return max(listeval)
-        return -1000 if self.check_echecW() else 0
+        return -600 if self.check_echecW() else 1
     
     def valcpW(self):
         listeval = []
-        vali = self.valjeu()
+        vali = self.valjeu2()
         for x in range(1, 9):
             for y in range(1, 9):
                 im = self.etat['white'].get((x, y))
@@ -234,20 +271,19 @@ class echec:
                                 it = self.etat['black'].get(pf)
                                 if it is not None:
                                     self.jouer_coupW((x, y), pf)
-                                    vp = self.valjeu() - vali - self.valcpB2()
+                                    vp = self.valjeu2() - vali -self.valcpB2()
                                     listeval += [vp]
                                     self.etat['white'].pop(pf)
                                     self.etat['white'][(x, y)] = im
                                     self.etat['black'][pf] = it
                                 else:
-                                    self.jouer_coupW((x, y), pf)
+                                    self.jouer_coupW((x, y), pf) 
                                     if self.check_echecB():
-                                        listeval+=[0.5 - self.valcpB2()]
+                                        listeval += [0.5-self.valcpB2()]
                                     else:
                                         listeval += [0]
                                     self.etat['white'].pop(pf)
-                                    self.etat['white'][(x, y)] = im
-                                    
+                                    self.etat['white'][(x, y)] = im   
                             except EchecError:
                                 continue
         if listeval != []:
@@ -256,7 +292,7 @@ class echec:
     
     def valcpB3(self):
         listeval = []
-        vali = self.valjeu()
+        vali = self.valjeu2()
         for x in range(1, 9):
             for y in range(1, 9):
                 im = self.etat['black'].get((x, y))
@@ -268,7 +304,7 @@ class echec:
                                 it = self.etat['white'].get(pf)
                                 if it is not None:
                                     self.jouer_coupB((x, y), pf)
-                                    listeval +=[vali-self.valjeu()-self.valcpW()]  
+                                    listeval +=[vali-self.valjeu2()]  
                                     self.etat['black'].pop(pf)
                                     self.etat['black'][(x, y)] = im
                                     self.etat['white'][pf] = it
@@ -282,11 +318,11 @@ class echec:
                                 continue
         if listeval != []:
             return max(listeval)
-        return -1000 if self.check_echecB() else 0
+        return -400 if self.check_echecB() else 1
     
     def valcpB2(self):
         listeval = []
-        vali = self.valjeu()
+        vali = self.valjeu2()
         for x in range(1, 9):
             for y in range(1, 9):
                 im = self.etat['black'].get((x, y))
@@ -298,25 +334,20 @@ class echec:
                                 it = self.etat['white'].get(pf)
                                 if it is not None:
                                     self.jouer_coupB((x, y), pf)
-                                    listeval +=[vali-self.valjeu()]  
+                                    listeval +=[vali-self.valjeu2()-self.valcpW2()]  
                                     self.etat['black'].pop(pf)
                                     self.etat['black'][(x, y)] = im
                                     self.etat['white'][pf] = it
                                 else:
                                     self.jouer_coupB((x, y), pf)
-                                    if self.check_echecW():
-                                        listeval += [0.5]
-                                    else:
-                                        listeval += [0]
+                                    listeval += [0]
                                     self.etat['black'].pop(pf)
                                     self.etat['black'][(x, y)] = im
-                                    
-                                    
                             except EchecError:
                                 continue
         if listeval != []:
             return max(listeval)
-        return -1000 if self.check_echecB() else -1
+        return -800 if self.check_echecB() else 1
     
     def valcpB(self):
         listeval = []
@@ -421,7 +452,7 @@ class echec:
                                 pf = (i, j)
                                 it = self.etat['white'].get(pf)
                                 self.jouer_coupB((x, y), pf)
-                                listeval += [vali - self.valjeu()-self.valcpW()]
+                                listeval += [vali - self.valjeu()-self.valcpW2()]
                                 liste += [[(x, y), pf]]
                                 if it is None:
                                     self.etat['black'].pop(pf)
@@ -504,35 +535,34 @@ class echec:
             raise EchecError('Échec et mat! (Noirs gagnent)')
     
     def check_echecB(self):
+        for h, k in self.etat['black'].items():
+            if k == 'K':
+                pf = h
         for i in range(1, 9):
             for j in range(1, 9):
-                try:
-                    for h, k in self.etat['black'].items():
-                        if k == 'K':
-                            pf = h
-                    im = self.etat['white'].get((i, j))
-                    if im is None:
-                        raise EchecError('pas de pion a cet emplacement')
-                    if im == 'P':
-                        self.deplacer_pionW((i, j), pf)
-                    elif im == 'C':
-                        self.deplacer_chevalW((i, j), pf)
-                    elif im == 'K':
-                        self.deplacer_roiW((i, j), pf)
-                    elif im == 'T':
-                        self.deplacer_tourW((i, j), pf)
-                    elif im == 'F':
-                        self.deplacer_fouW((i, j), pf)
-                    elif im == 'Q':
-                        self.deplacer_dameW((i, j), pf)
-                    
-                    self.etat['white'][(i, j)] = im
-                    self.etat['white'].pop(pf)
-                    self.etat['black'][pf] = 'K'
-                    return True
-                    break
-                except EchecError:
-                    continue
+                im = self.etat['white'].get((i, j))
+                if im is not None:
+                    try:
+                        if im == 'P':
+                            self.deplacer_pionW((i, j), pf)
+                        elif im == 'C':
+                            self.deplacer_chevalW((i, j), pf)
+                        elif im == 'K':
+                            self.deplacer_roiW((i, j), pf)
+                        elif im == 'T':
+                            self.deplacer_tourW((i, j), pf)
+                        elif im == 'F':
+                            self.deplacer_fouW((i, j), pf)
+                        elif im == 'Q':
+                            self.deplacer_dameW((i, j), pf)
+                        
+                        self.etat['white'][(i, j)] = im
+                        self.etat['white'].pop(pf)
+                        self.etat['black'][pf] = 'K'
+                        return True
+                        break
+                    except EchecError:
+                        continue
         return False
     
     def stratW(self):
@@ -582,33 +612,32 @@ class echec:
     
     def check_echecW(self):
         for h, k in self.etat['white'].items():
-                        if k == 'K':
-                            pf = h
+            if k == 'K':
+                pf = h
         for i in range(1, 9):
             for j in range(1, 9):
-                try:
-                    im = self.etat['black'].get((i, j))
-                    if im is None:
-                        raise EchecError('pas de pion a cet emplacement')
-                    elif im == 'P':
-                        self.deplacer_pionB((i, j), pf)
-                    elif im == 'C':
-                        self.deplacer_chevalB((i, j), pf)
-                    elif im == 'K':
-                        self.deplacer_roiB((i, j), pf)
-                    elif im == 'T':
-                        self.deplacer_tourB((i, j), pf)
-                    elif im == 'F':
-                        self.deplacer_fouB((i, j), pf)
-                    elif im == 'Q':
-                        self.deplacer_dameB((i, j), pf)
-                    self.etat['black'][(i, j)] = im
-                    self.etat['black'].pop(pf)
-                    self.etat['white'][pf] = 'K'
-                    return True
-                    break
-                except EchecError:
-                    continue
+                im = self.etat['black'].get((i, j))
+                if im is not None:
+                    try:
+                        if im == 'Q':
+                            self.deplacer_dameB((i, j), pf)
+                        elif im == 'P':
+                            self.deplacer_pionB((i, j), pf)
+                        elif im == 'C':
+                            self.deplacer_chevalB((i, j), pf)
+                        elif im == 'K':
+                            self.deplacer_roiB((i, j), pf)
+                        elif im == 'T':
+                            self.deplacer_tourB((i, j), pf)
+                        else:
+                            self.deplacer_fouB((i, j), pf)
+                        self.etat['black'][(i, j)] = im
+                        self.etat['black'].pop(pf)
+                        self.etat['white'][pf] = 'K'
+                        return True
+                        break
+                    except EchecError:
+                        continue
         return False
     
     def stratB(self):
@@ -682,13 +711,12 @@ class echec:
         return(''.join(tot))
     
     def jouer_coupW(self, pi, pf):
-        l1 = len(self.etat['black'].values())
         it = self.etat['black'].get(pf)
         if 8 >= pf[0] > 0 and 8 >= pf[1] > 0:
             if self.etat['white'].get(pi):
                 a = self.etat['white'][pi]
-                if a == 'P':
-                    self.deplacer_pionW(pi, pf)
+                if a == 'Q':
+                    self.deplacer_dameW(pi, pf)
                 elif a == 'C':
                     self.deplacer_chevalW(pi, pf)
                 elif a == 'K':
@@ -697,131 +725,84 @@ class echec:
                     self.deplacer_tourW(pi, pf)
                 elif a == 'F':
                     self.deplacer_fouW(pi, pf)
-                elif a == 'Q':
-                    self.deplacer_dameW(pi, pf)
+                else:
+                    self.deplacer_pionW(pi, pf)
             else:
                 raise EchecError('pas de pion a cette place la')
         else:
             raise EchecError('impossible de sortir du damier')
-        l2 = len(self.etat['black'].values())
-        if self.check_echecW() is True:
-            if l1 == l2:
+        if self.check_echecW():
+            if it is None:
                 self.etat['white'][pi] = a
                 self.etat['white'].pop(pf)
                 raise EchecError('votre roi est toujours en echec')
-            elif l1 != l2:
+            else:
                 self.etat['white'][pi] = a
                 self.etat['white'].pop(pf)
                 self.etat['black'][pf] = it
                 raise EchecError('Votre roi est toujours en échec')
     
     def deplacer_chevalB(self, pi, pf):
-        liste = []
-        liste += [(pi[0]+2, pi[1]+1)]
-        liste += [(pi[0]+2, pi[1]-1)]
-        liste += [(pi[0]-2, pi[1]+1)]
-        liste += [(pi[0]-2, pi[1]-1)]
-        liste += [(pi[0]+1, pi[1]+2)]
-        liste += [(pi[0]+1, pi[1]-2)]
-        liste += [(pi[0]-1, pi[1]+2)]
-        liste += [(pi[0]-1, pi[1]-2)]
+        liste = [(pi[0]+2, pi[1]+1), (pi[0]+2, pi[1]-1), (pi[0]-2, pi[1]+1), (pi[0]-2, pi[1]-1),
+                (pi[0]+1, pi[1]+2), (pi[0]+1, pi[1]-2), (pi[0]-1, pi[1]+2), (pi[0]-1, pi[1]-2)]
         p = 0
         q = 0
-        for r in liste:
-            if pf == r:
-                if self.etat['black'].get(pf):
-                    raise EchecError('le coup est invalide')
-                    q = 1
-                else:    
-                    self.etat['black'].pop(pi)
-                    self.etat['black'][pf] = 'C'
-                    p = 1
-                    if self.etat['white'].get(pf):
-                        self.etat['white'].pop(pf)
-        if p == 0 and q == 0:
+        if pf in liste:
+            if self.etat['black'].get(pf):
+                raise EchecError('le coup est invalide')
+            else:    
+                self.etat['black'].pop(pi)
+                self.etat['black'][pf] = 'C'
+                if self.etat['white'].get(pf):
+                    self.etat['white'].pop(pf)
+        else:
             raise EchecError('Le coup est invalide')
     
     def deplacer_roiB(self, pi, pf):
-        liste = []
-        liste += [(pi[0]+1, pi[1])]
-        liste += [(pi[0]-1, pi[1])]
-        liste += [(pi[0], pi[1]+1)]
-        liste += [((pi[0], pi[1]-1))]
-        liste += [(pi[0]+1, pi[1]+1)]
-        liste += [((pi[0]+1, pi[1]-1))]
-        liste += [(pi[0]-1, pi[1]+1)]
-        liste += [((pi[0]-1, pi[1]-1))]         
-        p = 0
-        q = 0
-        for r in liste:   
-            if pf == r:
-                if self.etat['black'].get(pf):
-                    raise EchecError('le coup est invalide')
-                    q = 1
-                else:
-                    self.etat['black'].pop(pi)
-                    self.etat['black'][pf] = 'K'
-                    p = 1
-                    if self.etat['white'].get(pf):
-                        self.etat['white'].pop(pf)
-        if p == 0 and q == 0:
+        liste = [(pi[0]+1, pi[1]), (pi[0]-1, pi[1]), (pi[0], pi[1]+1), (pi[0], pi[1]-1), (pi[0]+1, pi[1]+1),
+                (pi[0]+1, pi[1]-1), (pi[0]-1, pi[1]+1), (pi[0]-1, pi[1]-1)]            
+        if pf in liste:
+            if self.etat['black'].get(pf):
+                raise EchecError('le coup est invalide')
+            else:
+                self.etat['black'].pop(pi)
+                self.etat['black'][pf] = 'K'
+                if self.etat['white'].get(pf):
+                    self.etat['white'].pop(pf)
+        else:
             raise EchecError('Le coup est invalide')
     
     def deplacer_roiW(self, pi, pf):
-        liste = []
-        liste += [(pi[0]+1, pi[1])]
-        liste += [(pi[0]-1, pi[1])]
-        liste += [(pi[0], pi[1]+1)]
-        liste += [((pi[0], pi[1]-1))]
-        liste += [(pi[0]+1, pi[1]+1)]
-        liste += [((pi[0]+1, pi[1]-1))]
-        liste += [(pi[0]-1, pi[1]+1)]
-        liste += [((pi[0]-1, pi[1]-1))]
-        p = 0
-        q = 0
-        for r in liste:   
-            if pf == r:
-                if self.etat['white'].get(pf):
-                    raise EchecError('le coup est invalide')
-                    q = 1
-                else:
-                    self.etat['white'].pop(pi)
-                    self.etat['white'][pf] = 'K'
-                    p = 1
-                    if self.etat['black'].get(pf):
-                        self.etat['black'].pop(pf)
-        if p == 0 and q == 0:
+        liste = [(pi[0]+1, pi[1]), (pi[0]-1, pi[1]), (pi[0], pi[1]+1), (pi[0], pi[1]-1), (pi[0]+1, pi[1]+1),
+                   (pi[0]+1, pi[1]-1), (pi[0]-1, pi[1]+1), (pi[0]-1, pi[1]-1)]            
+        if pf in liste:
+            if self.etat['white'].get(pf):
+                raise EchecError('le coup est invalide')
+            else:
+                self.etat['white'].pop(pi)
+                self.etat['white'][pf] = 'K'
+                if self.etat['black'].get(pf):
+                    self.etat['black'].pop(pf)
+        else:
             raise EchecError('Le coup est invalide')
     
     def deplacer_chevalW(self, pi, pf):
-        liste = []
-        liste += [(pi[0]+2, pi[1]+1)]
-        liste += [(pi[0]+2, pi[1]-1)]
-        liste += [(pi[0]-2, pi[1]+1)]
-        liste += [(pi[0]-2, pi[1]-1)]
-        liste += [(pi[0]+1, pi[1]+2)]
-        liste += [(pi[0]+1, pi[1]-2)]
-        liste += [(pi[0]-1, pi[1]+2)]
-        liste += [(pi[0]-1, pi[1]-2)]
+        liste = [(pi[0]+2, pi[1]+1), (pi[0]+2, pi[1]-1), (pi[0]-2, pi[1]+1), (pi[0]-2, pi[1]-1),
+                (pi[0]+1, pi[1]+2), (pi[0]+1, pi[1]-2), (pi[0]-1, pi[1]+2), (pi[0]-1, pi[1]-2)]
         p = 0
         q = 0
-        for r in liste:
-            
-            if pf == r:
-                if self.etat['white'].get(pf):
-                    raise EchecError('le coup est invalide')
-                    q = 1
-                else:
-                    self.etat['white'].pop(pi)
-                    self.etat['white'][pf] = 'C'
-                    p = 1
-                    if self.etat['black'].get(pf):
-                        self.etat['black'].pop(pf)
-        if p == 0 and q == 0:
-            raise EchecError('coup invalide')
+        if pf in liste:
+            if self.etat['white'].get(pf):
+                raise EchecError('le coup est invalide')
+            else:    
+                self.etat['white'].pop(pi)
+                self.etat['white'][pf] = 'C'
+                if self.etat['black'].get(pf):
+                    self.etat['black'].pop(pf)
+        else:
+            raise EchecError('Le coup est invalide')
     
     def jouer_coupB(self, pi, pf):
-        l1 = len(self.etat['white'].values())
         it = self.etat['white'].get(pf)
         if 8 >= pf[0] > 0 and 8 >= pf[1] > 0:
             if self.etat['black'].get(pi):
@@ -836,23 +817,21 @@ class echec:
                     self.deplacer_tourB(pi, pf)
                 elif a == 'F':
                     self.deplacer_fouB(pi, pf)
-                elif a == 'Q':
+                else:
                     self.deplacer_dameB(pi, pf)
             else:
                 raise EchecError('pas de pion a cette place la')
         else:
             raise EchecError('impossible de sortir du damier')
-        l2 = len(self.etat['white'].values())
         if self.check_echecB() is True:
-            if l1 == l2:
+            if it is None:
                 self.etat['black'][pi] = a
                 self.etat['black'].pop(pf)
-                raise EchecError('Votre roi est toujours en echec')
-            elif l1 != l2:
+            else:
                 self.etat['black'][pi] = a
                 self.etat['black'].pop(pf)
                 self.etat['white'][pf] = it
-                raise EchecError('votre roi est toujours en echec')
+            raise EchecError('votre roi est toujours en echec')
     
     def deplacer_pionB(self, pi, pf):
         liste = []
@@ -864,17 +843,14 @@ class echec:
             liste += [(pi[0]+1, pi[1]+1)]
         if self.etat['white'].get((pi[0]-1, pi[1]+1)):
             liste += [(pi[0]-1, pi[1]+1)]
-        p = 0
-        for r in liste:
-            if pf == r:
-                self.etat['black'].pop(pi)
-                self.etat['black'][pf] = 'P'
-                if pf[1] == 8:
-                    self.etat['black'][pf] = 'Q'
-                p = 1
-                if self.etat['white'].get(pf):
-                    self.etat['white'].pop(pf)
-        if p == 0:
+        if pf in liste:
+            self.etat['black'].pop(pi)
+            self.etat['black'][pf] = 'P'
+            if pf[1] == 8:
+                self.etat['black'][pf] = 'Q'
+            if self.etat['white'].get(pf):
+                self.etat['white'].pop(pf)
+        else:
             raise EchecError('coup invalide')
     
     def deplacer_pionW(self, pi, pf):
@@ -887,17 +863,14 @@ class echec:
             liste += [((pi[0]+1, pi[1]-1))]
         if self.etat['black'].get((pi[0]-1, pi[1]-1)):
             liste += [(pi[0]-1, pi[1]-1)]
-        p = 0
-        for r in liste:
-            if pf == r:
-                self.etat['white'].pop(pi)
-                self.etat['white'][pf] = 'P'
-                if pf[1] == 1:
-                    self.etat['white'][pf] = 'Q'
-                p = 1
-                if self.etat['black'].get(pf):
-                    self.etat['black'].pop(pf)
-        if p == 0:
+        if pf in liste:
+            self.etat['white'].pop(pi)
+            self.etat['white'][pf] = 'P'
+            if pf[1] == 1:
+                self.etat['white'][pf] = 'Q'
+            if self.etat['black'].get(pf):
+                self.etat['black'].pop(pf)
+        else:
             raise EchecError('coup invalide')
     
     def deplacer_tourW(self, pi, pf):
@@ -938,15 +911,12 @@ class echec:
                 break
             if self.etat['white'].get((pi[0]+1+i, pi[1])):
                 break
-        p = 0
-        for r in liste:
-            if pf == r:
-                self.etat['white'].pop(pi)
-                self.etat['white'][pf] = 'T'
-                p = 1
-                if self.etat['black'].get(pf):
-                    self.etat['black'].pop(pf)
-        if p == 0 :
+        if pf in liste:
+            self.etat['white'].pop(pi)
+            self.etat['white'][pf] = 'T'
+            if self.etat['black'].get(pf):
+                self.etat['black'].pop(pf)
+        else:
           raise EchecError('le coup est invalide')
     
     def deplacer_tourB(self, pi, pf):
@@ -987,15 +957,13 @@ class echec:
                 break
             if self.etat['black'].get((pi[0]+1+i, pi[1])):
                 break
-        p = 0
-        for r in liste:
-            if pf == r:
-                self.etat['black'].pop(pi)
-                self.etat['black'][pf] = 'T'
-                p = 1
-                if self.etat['white'].get(pf):
-                    self.etat['white'].pop(pf)
-        if p == 0 :
+        if pf in liste:
+            self.etat['black'].pop(pi)
+            self.etat['black'][pf] = 'T'
+            p = 1
+            if self.etat['white'].get(pf):
+                self.etat['white'].pop(pf)
+        else:
           raise EchecError('le coup est invalide')
     
     def deplacer_fouB(self, pi, pf):
@@ -1036,15 +1004,12 @@ class echec:
                 break
             if self.etat['black'].get((pi[0]-i-1, pi[1]+i+1)):
                 break
-        p = 0
-        for r in liste:
-            if pf == r:
-                self.etat['black'].pop(pi)
-                self.etat['black'][pf] = 'F'
-                p = 1
-                if self.etat['white'].get(pf):
-                    self.etat['white'].pop(pf)
-        if p == 0 :
+        if pf in liste:
+            self.etat['black'].pop(pi)
+            self.etat['black'][pf] = 'F'
+            if self.etat['white'].get(pf):
+                self.etat['white'].pop(pf)
+        else:
           raise EchecError('le coup est invalide')
     
     def deplacer_fouW(self, pi, pf):
@@ -1085,187 +1050,29 @@ class echec:
                 break
             if self.etat['white'].get((pi[0]-1-i, pi[1]+i+1)):
                 break
-        p = 0
-        for r in liste:
-            if pf == r:
-                self.etat['white'].pop(pi)
-                self.etat['white'][pf] = 'F'
-                p = 1
-                if self.etat['black'].get(pf):
-                    self.etat['black'].pop(pf)
-        if p == 0 :
+        if pf in liste:
+            self.etat['white'].pop(pi)
+            self.etat['white'][pf] = 'F'
+            if self.etat['black'].get(pf):
+                self.etat['black'].pop(pf)
+        else:
           raise EchecError('le coup est invalide')
     
     def deplacer_dameW(self, pi, pf):
-        liste = []
-        for i in range(8):
-            if pi[1]+i > 7:
-                break
-            if not self.etat['white'].get((pi[0], pi[1]+i+1)):
-                liste += [(pi[0], pi[1]+1+i)]
-            if self.etat['black'].get((pi[0], pi[1]+i+1)):
-                break
-            if self.etat['white'].get((pi[0], pi[1]+i+1)):
-                break
-        for i in range(8):
-            if pi[1]-i < 2:
-                break
-            if not self.etat['white'].get((pi[0], pi[1]-i-1)):
-                liste += [(pi[0], pi[1]-1-i)]
-            if self.etat['black'].get((pi[0], pi[1]-i-1)):
-                break
-            if self.etat['white'].get((pi[0], pi[1]-i-1)):
-                break
-        for i in range(8):
-            if pi[0]-i < 2:
-                break
-            if not self.etat['white'].get((pi[0]-i-1, pi[1])):
-                liste += [(pi[0]-i-1, pi[1])]
-            if self.etat['black'].get((pi[0]-i-1, pi[1])):
-                break
-            if self.etat['white'].get((pi[0]-1-i, pi[1])):
-                break
-        for i in range(8):
-            if pi[0]+i > 7:
-                break
-            if not self.etat['white'].get((pi[0]+i+1, pi[1])):
-                liste += [(pi[0]+i+1, pi[1])]
-            if self.etat['black'].get((pi[0]+i+1, pi[1])):
-                break
-            if self.etat['white'].get((pi[0]+1+i, pi[1])):
-                break
-        for i in range(8):
-            if pi[1]+i > 7 or pi[0]+i > 7 :
-                break
-            if not self.etat['white'].get((pi[0]+i+1, pi[1]+i+1)):
-                liste += [(pi[0]+1+i, pi[1]+1+i)]
-            if self.etat['black'].get((pi[0]+1+i, pi[1]+i+1)):
-                break
-            if self.etat['white'].get((pi[0]+1+i, pi[1]+i+1)):
-                break
-        for i in range(8):
-            if pi[1]-i < 2 or pi[0]+i > 7:
-                break
-            if not self.etat['white'].get((pi[0]+1+i, pi[1]-i-1)):
-                liste += [(pi[0]+1+i, pi[1]-1-i)]
-            if self.etat['black'].get((pi[0]+1+i, pi[1]-i-1)):
-                break
-            if self.etat['white'].get((pi[0]+1+i, pi[1]-i-1)):
-                break
-        for i in range(8):
-            if pi[0]-i < 2 or pi[1]-i < 2:
-                break
-            if not self.etat['white'].get((pi[0]-i-1, pi[1]-i-1)):
-                liste += [(pi[0]-i-1, pi[1]-i-1)]
-            if self.etat['black'].get((pi[0]-i-1, pi[1]-i-1)):
-                break
-            if self.etat['white'].get((pi[0]-1-i, pi[1]-i-1)):
-                break
-        for i in range(8):
-            if pi[0]-i < 2 or pi[1]+i > 7:
-                break
-            if not self.etat['white'].get((pi[0]-i-1, pi[1]+i+1)):
-                liste += [(pi[0]-i-1, pi[1]+i+1)]
-            if self.etat['black'].get((pi[0]-i-1, pi[1]+i+1)):
-                break
-            if self.etat['white'].get((pi[0]-1-i, pi[1]+i+1)):
-                break
-        p = 0
-        for r in liste:
-            if pf == r:
-                self.etat['white'].pop(pi)
-                self.etat['white'][pf] = 'Q'
-                p = 1
-                if self.etat['black'].get(pf):
-                    self.etat['black'].pop(pf)
-        if p == 0 :
-          raise EchecError('le coup est invalide')
+        try:
+            self.deplacer_fouW(pi, pf)
+            self.etat['white'][pf] = 'Q'
+        except EchecError:
+            self.deplacer_tourW(pi, pf)
+            self.etat['white'][pf] = 'Q'
     
     def deplacer_dameB(self, pi, pf):
-        liste = []
-        for i in range(8):
-            if pi[1]+i > 7:
-                break
-            if not self.etat['black'].get((pi[0], pi[1]+i+1)):
-                liste += [(pi[0], pi[1]+1+i)]
-            if self.etat['white'].get((pi[0], pi[1]+i+1)):
-                break
-            if self.etat['black'].get((pi[0], pi[1]+i+1)):
-                break
-        for i in range(8):
-                if pi[1]-i < 2:
-                    break
-                if not self.etat['black'].get((pi[0], pi[1]-i-1)):
-                    liste += [(pi[0], pi[1]-1-i)]
-                if self.etat['white'].get((pi[0], pi[1]-i-1)):
-                    break
-                if self.etat['black'].get((pi[0], pi[1]-i-1)):
-                    break
-        for i in range(8):
-            if pi[0]-i < 2:
-                break
-            if not self.etat['black'].get((pi[0]-i-1, pi[1])):
-                liste += [(pi[0]-i-1, pi[1])]
-            if self.etat['white'].get((pi[0]-i-1, pi[1])):
-                break
-            if self.etat['black'].get((pi[0]-i-1, pi[1])):
-                break
-        for i in range(8):
-            if pi[0]+i > 7:
-                break
-            if not self.etat['black'].get((pi[0]+i+1, pi[1])):
-                liste += [(pi[0]+i+1, pi[1])]
-            if self.etat['white'].get((pi[0]+i+1, pi[1])):
-                break
-            if self.etat['black'].get((pi[0]+i+1, pi[1])):
-                break
-        for i in range(8):
-            if pi[1]+i > 7 or pi[0]+i > 7 :
-                break
-            if not self.etat['black'].get((pi[0]+i+1, pi[1]+i+1)):
-                liste += [(pi[0]+1+i, pi[1]+1+i)]
-            if self.etat['white'].get((pi[0]+1+i, pi[1]+i+1)):
-                break
-            if self.etat['black'].get((pi[0]+i+1, pi[1]+i+1)):
-                break
-        for i in range(8):
-            if pi[1]-i < 2 or pi[0]+i > 7:
-                break
-            if not self.etat['black'].get((pi[0]+1+i, pi[1]-i-1)):
-                liste += [(pi[0]+1+i, pi[1]-1-i)]
-            if self.etat['white'].get((pi[0]+1+i, pi[1]-i-1)):
-                break
-            if self.etat['black'].get((pi[0]+i+1, pi[1]-i-1)):
-                break
-        for i in range(8):
-            if pi[0]-i < 2 or pi[1]-i < 2:
-                break
-            if not self.etat['black'].get((pi[0]-i-1, pi[1]-i-1)):
-                liste += [(pi[0]-i-1, pi[1]-i-1)]
-            if self.etat['white'].get((pi[0]-i-1, pi[1]-i-1)):
-                break
-            if self.etat['black'].get((pi[0]-i-1, pi[1]-i-1)):
-                break
-        for i in range(8):
-            if pi[0]-i < 2 or pi[1]+i > 7:
-                break
-            if not self.etat['black'].get((pi[0]-i-1, pi[1]+i+1)):
-                liste += [(pi[0]-i-1, pi[1]+i+1)]
-            if self.etat['white'].get((pi[0]-i-1, pi[1]+i+1)):
-                break
-            if self.etat['black'].get((pi[0]-i-1, pi[1]+i+1)):
-                break
-        p = 0
-        for r in liste:
-            if pf == r:
-                self.etat['black'].pop(pi)
-                self.etat['black'][pf] = 'Q'
-                p = 1
-                if self.etat['white'].get(pf):
-                    self.etat['white'].pop(pf)
-        if p == 0 :
-            raise EchecError('le coup est invalide')
-
+        try:
+            self.deplacer_fouB(pi, pf)
+            self.etat['black'][pf] = 'Q'
+        except EchecError:
+            self.deplacer_tourB(pi, pf)
+            self.etat['black'][pf] = 'Q'
 class echecX(echec):
     def __init__(self, état=None):
         super().__init__(état)
@@ -1332,7 +1139,7 @@ class echecX(echec):
             self.pb.color('white')
             self.pb.speed(0)
             self.pb.goto(-9*n + 2*n*(pd[0]), -9*n + 2*n*(pb[1]))
-class echecXX(e.echec):
+class echecXX(echec):
     def __init__(self, état=None):
         super().__init__(état)
         joe = turtle.Turtle(visible=None)
@@ -3727,6 +3534,24 @@ class echecXX(e.echec):
             self.hh.shape('square')
 class EchecError(Exception):
     pass
+
+# a = echec()
+# a.jouer_coupB((6, 2), (6, 3))
+# a.jouer_coupW((4, 7), (4, 5))
+# a.stratB2()
+# print(a.etat)
+
+# for i in range(1, 9):
+#     for j in range(1, 9):
+#         for k in range(1, 9):
+#             for l in range(1, 9):
+#                 try:
+#                     a.jouer_coupW((9-i,  j),(k, l))
+#                     print(a)
+#                 except Exception as err:
+#                     print(err)
+
+# print(a)
 # a = echec()
 # a.jouer_coupB((7, 2), (7, 3))
 # a.jouer_coupB((6, 1), (8, 3))

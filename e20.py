@@ -1056,6 +1056,9 @@ class echec:
             except EchecError:
                 raise EchecError('le coup est invalide') 
 # a = echec()
+# for i in range(30):
+#     a.stratB3()
+#     print(a)
 # while True:
 #     try:
 #         a.stratW3()
